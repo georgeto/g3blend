@@ -81,6 +81,17 @@ def load_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
                                                               _to_blend_quat(chunk.content.pose_rotation),
                                                               _to_blend_vec(chunk.content.pose_scale))
             last_motion_part_rest_matrix_inv = last_motion_part_rest_matrix.inverted_safe()
+
+            if last_motion_part not in arm_obj.pose.bones:
+                continue
+
+            pose_bone = arm_obj.pose.bones[last_motion_part]
+            # Set pose matrix used in xmot (relative to bone's rest matrix)
+            bone = pose_bone.bone
+            rest_matrix = bone.matrix_local
+            if bone.parent is not None:
+                rest_matrix = bone.parent.matrix_local.inverted_safe() @ rest_matrix
+            pose_bone.matrix_basis = rest_matrix.inverted_safe() @ last_motion_part_rest_matrix
         elif isinstance(chunk.content, Xmot.CnkKeyFrame):
             if last_motion_part is None:
                 raise ValueError('KeyFrame chunk must be preceded by a MotionPart chunk.')
@@ -93,10 +104,6 @@ def load_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
             pose_bone = arm_obj.pose.bones[last_motion_part]
             pre_matrix = last_motion_part_rest_matrix_inv
             post_matrix = Matrix()
-
-            # Apply matrix
-            # TODO: Necessary?
-            # pose_bone.matrix_basis = bone_matrix
 
             keyframe_chunk = chunk.content
             match keyframe_chunk.animation_type:

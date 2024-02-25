@@ -113,6 +113,9 @@ def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
         else:
             bone_matrix = bone_matrix
 
+        # Also consider the pose base matrix.
+        bone_matrix = bone_matrix @ pose_bone.matrix_basis
+
         loc, rot, scale = bone_matrix.decompose()
 
         motion_part = _add_chunk(chunks, Xmot.LmaChunkId.motionpart, 3, Xmot.CnkMotionPart)
