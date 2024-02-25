@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 
 import bpy
 from mathutils import Vector, Matrix, Quaternion
@@ -137,7 +138,7 @@ def _import_armature(context: bpy.types.Context, name: str, xact: Xact, global_m
     nodes = get_chunks_by_type(Xact.CnkNode, xact.actor.chunks)
     for node in nodes:
         if not node.parent.data:
-            _import_armature_node(arm_data, Matrix(), node, nodes)
+            _import_armature_node(arm_data, Matrix(), None, node, nodes)
 
     # Exit Edit mode
     bpy.ops.object.mode_set(mode='OBJECT')
@@ -147,10 +148,24 @@ def _import_armature(context: bpy.types.Context, name: str, xact: Xact, global_m
     return arm
 
 
-def _import_armature_node(arm_data: bpy.types.Armature, parent_matrix: Matrix, node: Xact.CnkNode,
-                          nodes: list[Xact.CnkNode]) -> bpy.types.EditBone:
-    edit_bone = arm_data.edit_bones.new(name=node.name.data)
-    edit_bone.select = True
+def _is_obsolete_joint(node: Xact.CnkNode):
+    """
+    Filter out all nodes which contain _ROOT or _END in their name, and have less
+    or equals than two words when split with the seprator '_'. Gothic 3 does the
+    same in eCWrapper_emfx2Actor::CleanUpHierachy.
+
+    I suspect that the second condition is to preserve the root *_ROOT node (e.g. Orc_ROOT).
+    """
+    name = node.name.data
+    return (name.endswith('_ROOT') or name.endswith('_END')) and len(name.split('_')) > 2
+
+
+def _import_armature_node(arm_data: bpy.types.Armature, parent_matrix: Matrix, parent_bone: Optional[bpy.types.EditBone],
+                          node: Xact.CnkNode, nodes: list[Xact.CnkNode]):
+    # TODO: Scale...
+    # Oh, the problem is that scale is all zeroes, but what is about scale_orient :/
+    local_matrix = Matrix.LocRotScale(_to_blend_vec(node.position), _to_blend_quat(node.rotation), None)
+    bone_matrix = parent_matrix @ local_matrix
 
     children = list(get_child_nodes(node, nodes))
 
@@ -166,7 +181,7 @@ def _import_armature_node(arm_data: bpy.types.Armature, parent_matrix: Matrix, n
     #    bone_size /= len(children)
 
     # OHHHHHH, finally I get it!
-    # _ROOT and _END are there to describe bones.
+    # TODO: _ROOT and _END are there to describe bones.
 
     # The algorithm to connect bones is to search in their orientation direction for intersections with other bones (see __CalcBoneBoundBox in KrxAscImp).
     # The algorith works great with Scavenger (_ROOT and _END), also for the door it is fine I guess, the bones are just not connected there...
@@ -190,21 +205,20 @@ def _import_armature_node(arm_data: bpy.types.Armature, parent_matrix: Matrix, n
     __bone_prep_rotation_matrix_inverted = __bone_prep_rotation_matrix.inverted()
     """
 
-    edit_bone.tail = Vector((0.0, 0.0, 1.0)) * max(100.0, bone_size)
+    obsolete = _is_obsolete_joint(node)
 
-    # TODO: Scale...
-    # Oh, the problem is that scale is all zeroes, but what is about scale_orient :/
-    local_matrix = Matrix.LocRotScale(_to_blend_vec(node.position), _to_blend_quat(node.rotation), None)
-    bone_matrix = parent_matrix @ local_matrix
-    edit_bone.matrix = bone_matrix
+    if not obsolete:
+        edit_bone = arm_data.edit_bones.new(name=node.name.data)
+        edit_bone.select = True
+        edit_bone.tail = Vector((0.0, 0.0, 1.0)) * max(1.0, bone_size)
+        edit_bone.matrix = bone_matrix
+        edit_bone.parent = parent_bone
+        if parent_bone is not None and similar_values_iter(edit_bone.tail, parent_bone.head):
+            edit_bone.use_connect = True
+    else:
+        edit_bone = parent_bone
 
     for child in children:
-        child_edit_bone = _import_armature_node(arm_data, bone_matrix, child, nodes)
-        child_edit_bone.parent = edit_bone
-
-        if similar_values_iter(edit_bone.tail, child_edit_bone.head):
-            child_edit_bone.use_connect = True
-
-    return edit_bone
+        _import_armature_node(arm_data, bone_matrix, edit_bone, child, nodes)
 
 # TODO: Attach stuff (slots?) to bone, see link_skeleton_children()...
