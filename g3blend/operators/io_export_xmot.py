@@ -102,21 +102,24 @@ def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
 
         # TODO: Might want to use sampling as an alternative for complex animations with constraints and stuff.
 
+    old_scene_frame_current = context.scene.frame_current
+    # TODO: Use scene.frame_start instead?
+    # Have to jump to first frame of animation so that pose_bone.matrix_basis is set to value of the first frame.
+    context.scene.frame_current = 0
+
     # 3. Collect all bones in armature
     for pose_bone in reversed(arm_obj.pose.bones):
         bone_obj = pose_bone.bone
 
-        bone_matrix = bone_obj.matrix_local
-        # We need the relative matrix
+        rest_matrix = bone_obj.matrix_local
+        # We need the parent relative rest matrix.
         if bone_obj.parent:
-            bone_matrix = bone_obj.parent.matrix_local.inverted_safe() @ bone_matrix
-        else:
-            bone_matrix = bone_matrix
+            rest_matrix = bone_obj.parent.matrix_local.inverted_safe() @ rest_matrix
 
-        # Also consider the pose base matrix.
-        bone_matrix = bone_matrix @ pose_bone.matrix_basis
+        # pose position = rest position (edit bone) @ pose base matrix (pose_bone.matrix_basis)
+        pose_matrix = rest_matrix @ pose_bone.matrix_basis
 
-        loc, rot, scale = bone_matrix.decompose()
+        loc, rot, scale = pose_matrix.decompose()
 
         motion_part = _add_chunk(chunks, Xmot.LmaChunkId.motionpart, 3, Xmot.CnkMotionPart)
         motion_part.name = _from_str(motion_part, pose_bone.name)
@@ -153,15 +156,15 @@ def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
             match animation_type:
                 # Position
                 case 'P':
-                    value_map = lambda p, v: _from_blend_vec(p, (bone_matrix @ Matrix.Translation(v)).to_translation())
+                    value_map = lambda p, v: _from_blend_vec(p, (rest_matrix @ Matrix.Translation(v)).to_translation())
                     frame_type = Xmot.VectorKeyFrame
                 # Rotation
                 case 'R':
-                    value_map = lambda p, v: _from_blend_quat(p, (bone_matrix @ v.to_matrix().to_4x4()).to_quaternion())
+                    value_map = lambda p, v: _from_blend_quat(p, (rest_matrix @ v.to_matrix().to_4x4()).to_quaternion())
                     frame_type = Xmot.QuaternionKeyFrame
                 # Scaling
                 case 'S':
-                    value_map = lambda p, v: _from_blend_vec(p, (bone_matrix @ Matrix.LocRotScale(None, None, v)).to_translation().to_3d())
+                    value_map = lambda p, v: _from_blend_vec(p, (rest_matrix @ Matrix.LocRotScale(None, None, v)).to_translation().to_3d())
                     frame_type = Xmot.VectorKeyFrame
                 case _:
                     continue
@@ -186,13 +189,15 @@ def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
     # 3. Figure out keyframe/animation data for each bone
     # 4. Export bones with pose position + bind position (both as rest, stored in Bone.matrix_local)
     # 5. Export keyframes, make absolute by multiplying with rest pose.
-    pass
 
     # TODO: Two export modes:
     #   - If keyframes have compatible format, directly export the keyframes.
     #     Problem is that this only works for the current action of the object, actions that are not current, cannot be exported like that...
     #   - Otherwise sample the scene for each frame.
     # (see the different variants in `fbx_animations(scene_data):`)
+
+    # Restore scene frame selection
+    context.scene.frame_current = old_scene_frame_current
 
 
 def _extract_frames_from_curves(curves: list[bpy.types.FCurve], num_channels: int, combine) -> Optional[tuple[str, list[tuple[float, Any]]]]:

@@ -116,8 +116,8 @@ def _import_skinning(submesh: Xact.Submesh, nodes: list[Xact.CnkNode], skinning:
 
 def _import_armature(context: bpy.types.Context, name: str, xact: Xact, global_matrix: Matrix) -> bpy.types.Object:
     arm_data = bpy.data.armatures.new(name=f'{name}_armature')
-    arm_data.show_names = True
-    arm_data.show_axes = True
+    #arm_data.show_names = True
+    #arm_data.show_axes = True
     arm_data.display_type = 'STICK'
     arm = bpy.data.objects.new(name=f'{name}_armature', object_data=arm_data)
     arm.show_in_front = True

@@ -85,7 +85,6 @@ def load_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
             last_motion_part_rest_matrix = Matrix.LocRotScale(_to_blend_vec(chunk.content.pose_position),
                                                               _to_blend_quat(chunk.content.pose_rotation),
                                                               _to_blend_vec(chunk.content.pose_scale))
-            last_motion_part_rest_matrix_inv = last_motion_part_rest_matrix.inverted_safe()
 
             if last_motion_part not in arm_obj.pose.bones:
                 continue
@@ -96,7 +95,12 @@ def load_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
             rest_matrix = bone.matrix_local
             if bone.parent is not None:
                 rest_matrix = bone.parent.matrix_local.inverted_safe() @ rest_matrix
-            pose_bone.matrix_basis = rest_matrix.inverted_safe() @ last_motion_part_rest_matrix
+            # TODO: Instead we might have to update the rest position on each animation import.
+            #       Not sure how stable it is to set pose bone matrix here.
+            #       Probably very inconvenient for the animator (might want to use the "Clear Transformations" feature).
+            #       Or maybe just create an initial keyframe for all bones without animation?
+            last_motion_part_rest_matrix_inv = rest_matrix.inverted_safe()
+            pose_bone.matrix_basis = last_motion_part_rest_matrix_inv @ last_motion_part_rest_matrix
         elif isinstance(chunk.content, Xmot.CnkKeyFrame):
             if last_motion_part is None:
                 raise ValueError('KeyFrame chunk must be preceded by a MotionPart chunk.')
