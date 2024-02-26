@@ -1,3 +1,4 @@
+import math
 from pathlib import Path
 
 import bpy
@@ -24,6 +25,7 @@ def _to_blend_vec(vector: Xmot.Vector) -> Vector:
 
 def _detect_frame_time(xmot: Xmot):
     # TODO: ...
+    return 25
     """
     // Determine min and max frame
     float minFrameTime = Float.MAX_VALUE;
@@ -45,7 +47,6 @@ def _detect_frame_time(xmot: Xmot):
         throw new IllegalStateException("Detected LastFrame " + lastFrame + " is not an integral value.");
     int numFrames = (Math.round(lastFrame)) + 1;
     """
-    pass
 
 
 def load_xmot(context: bpy.types.Context, filepath: str, global_scale: float, global_matrix: Matrix):
@@ -56,9 +57,13 @@ def load_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
     if arm_obj is None:
         raise ValueError("No selected armature found.")
 
+    fps = _detect_frame_time(xmot)
+    min_frame_time = None
+    max_frame_time = None
 
     action = bpy.data.actions.new(name)
     action.use_fake_user = True
+    action.use_cyclic = True
     animation_data = arm_obj.animation_data
     if animation_data is None:
         animation_data = arm_obj.animation_data_create()
@@ -152,22 +157,21 @@ def load_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
 
                 for channel in range(num_channels):
                     keyframe_point = curves[channel].keyframe_points[i]
-                    keyframe_point.co = frame.time * 25, value[channel]
+                    keyframe_point.co = frame.time * fps, value[channel]
                     keyframe_point.interpolation = interpolation
+
+                if min_frame_time is not None:
+                    min_frame_time = min(min_frame_time, frame.time)
+                    max_frame_time = max(max_frame_time, frame.time)
+                else:
+                    min_frame_time = frame.time
+                    max_frame_time = frame.time
 
             # Usage of low level API to insert key frames requires manual update afterwards.
             for curve in curves:
                 curve.update()
 
-
-            # TODO: Calculate...
-            num_frames = 10
-            # TODO: Does not yet work :/
-            # AH, need the following...
-            # 	scene = bpy.context.scene
-	        # scene.frame_start = start
-	        # scene.frame_end = end
-            action.use_cyclic = True
-            # action.use_frame_range = True
-            # action.frame_start = 0
-            # action.frame_end = 25
+    if min_frame_time is not None:
+        context.scene.frame_start = math.trunc(min_frame_time * fps)
+        context.scene.frame_end = math.ceil(max_frame_time * fps)
+        context.scene.frame_current = 0
