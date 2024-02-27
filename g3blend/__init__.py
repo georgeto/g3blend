@@ -73,12 +73,24 @@ class ImportXact(bpy.types.Operator, ImportHelper, AxisHelper):
         default=False,
     )
 
+    show_bone_names: BoolProperty(
+        name="Display bone names",
+        description="Show bone names, can later be changed in armature properties",
+        default=False,
+    )
+
+    show_bone_axes: BoolProperty(
+        name="Display bone axes",
+        description="Show bone axes, can later be changed in armature properties",
+        default=False,
+    )
+
     def execute(self, context):
         try:
             global_scale, global_matrix = self._global_transform(context)
             if self.reset_scene:
                 reset_scene()
-            load_xact(context, self.filepath, global_scale, global_matrix)
+            load_xact(context, self.filepath, global_scale, global_matrix, self.show_bone_names, self.show_bone_axes)
         except Exception as e:
             self.report({'ERROR'}, f'Error while importing {self.filepath}: {e}')
             logger.exception('Error while importing {}', self.filepath)

@@ -33,7 +33,8 @@ def _to_blend_vec2_tuple(vector: Xact.Vector2) -> tuple[float, float]:
     return vector.x, vector.y
 
 
-def load_xact(context: bpy.types.Context, filepath: str, global_scale: float, global_matrix: Matrix):
+def load_xact(context: bpy.types.Context, filepath: str, global_scale: float, global_matrix: Matrix,
+              show_bone_names: bool, show_bone_axes: bool):
     name = Path(filepath).stem
     xact = read_genomfle(Xact, filepath)
 
@@ -44,7 +45,7 @@ def load_xact(context: bpy.types.Context, filepath: str, global_scale: float, gl
     context.view_layer.objects.active = actor_obj
     actor_obj.select_set(True)
 
-    armature_obj = _import_armature(context, name, xact, global_matrix)
+    armature_obj = _import_armature(context, name, xact, global_matrix, show_bone_names, show_bone_axes)
     armature_obj.parent = actor_obj
     #context.scene.collection.objects.link(armature_obj)
 
@@ -114,10 +115,11 @@ def _import_skinning(submesh: Xact.Submesh, nodes: list[Xact.CnkNode], skinning:
             vg.add((vertex_index,), influence.weight, 'REPLACE')
 
 
-def _import_armature(context: bpy.types.Context, name: str, xact: Xact, global_matrix: Matrix) -> bpy.types.Object:
+def _import_armature(context: bpy.types.Context, name: str, xact: Xact, global_matrix: Matrix,
+                     show_bone_names: bool, show_bone_axes: bool) -> bpy.types.Object:
     arm_data = bpy.data.armatures.new(name=f'{name}_armature')
-    #arm_data.show_names = True
-    #arm_data.show_axes = True
+    arm_data.show_names = show_bone_names
+    arm_data.show_axes = show_bone_axes
     arm_data.display_type = 'STICK'
     arm = bpy.data.objects.new(name=f'{name}_armature', object_data=arm_data)
     arm.show_in_front = True
