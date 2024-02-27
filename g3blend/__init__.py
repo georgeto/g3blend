@@ -19,8 +19,7 @@ bl_info = {
     "author": "georgeto",
     "version": (0, 0, 3),
     "description": "Gothic 3 Import/Export meshes, materials, textures, animations",
-    # TODO: Set to minimal required level, might also work with versions before Blender 3.6.
-    "blender": (3, 6, 0),
+    "blender": (3, 5, 0),
     "location": "File > Import-Export",
     "warning": "",
     "doc_url": "https://github.com/georgeto/g3blend",
