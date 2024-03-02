@@ -68,6 +68,16 @@ def get_child_nodes(node: T, nodes: list[T]) -> Iterable[T]:
     return (child for child in nodes if child.parent.data == node.name.data)
 
 
+def lookup_strtab(meta: Genomfle.GenomfleTail, index: int) -> str:
+    if not meta.strtbl_present:
+        raise IndexError('Stringtable lookup in file without stringtable.')
+
+    if index < meta.num_strtbl_entries:
+        return meta.strtbl_entries[index].data
+    else:
+        raise IndexError(f'Stringtable lookup with out of range index {index} (has {meta.num_strtbl_entries} entries)')
+
+
 def similar_values_iter(v1, v2, epsilon=1e-6):
     """Return True if iterables v1 and v2 are nearly the same."""
     return v1 == v2 or all(math.isclose(c1, c2, rel_tol=epsilon) for c1, c2 in zip(v1, v2))

@@ -61,7 +61,7 @@ def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
     # 1. Find armature
     arm_obj = find_armature(context)
     if arm_obj is None:
-        raise ValueError("No selected armature found.")
+        raise ValueError('No selected armature found.')
 
     # 2. Figure out keyframe/animation data for each bone
     action = arm_obj.animation_data.action
@@ -176,7 +176,23 @@ def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
                 xframe.value = value_map(xframe, value)
                 key_frame.frames.append(xframe)
 
-    set_genomfle(xmot, [])
+    # Write frame effects.
+    strtbl = []
+    for frame, effect in _extract_frame_effects(action).items():
+        key_frame = int(frame)
+        if effect in strtbl:
+            strbl_index = strtbl.index(effect)
+        else:
+            strbl_index = len(strtbl)
+            strtbl.append(effect)
+
+        frame_effect = xmot.cst(Xmot.FrameEffect)
+        frame_effect.key_frame = key_frame
+        frame_effect.effect_name = frame_effect.cst(Xmot.String)
+        frame_effect.effect_name.strtab_index = strbl_index
+        xmot.frame_effects.append(frame_effect)
+
+    set_genomfle(xmot, strtbl)
     write_genomfle(xmot, filepath)
 
     # From FBX:
@@ -198,6 +214,19 @@ def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
 
     # Restore scene frame selection
     context.scene.frame_current = old_scene_frame_current
+
+
+def _extract_frame_effects(action: bpy.types.Action) -> dict[int, str]:
+    frame_effects = action.get('frame_effects', None)
+    if frame_effects is None:
+        return {}
+
+    items = getattr(frame_effects, "items", lambda: None)()
+    if items is None:
+        logger.error("The frame_effects property of action must be a dictionary.")
+        return {}
+
+    return {int(frame): effect for frame, effect in items}
 
 
 def _extract_frames_from_curves(curves: list[bpy.types.FCurve], num_channels: int, combine) -> Optional[tuple[str, list[tuple[float, Any]]]]:

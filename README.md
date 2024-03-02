@@ -22,6 +22,11 @@ Make sure to enable the addon after install.
 - Import `xmot` via  `File->Import->Gothic 3 Motion`.
 - Emport `xmot` via  `File->Export->Gothic 3 Motion`.
 
+## Frame effects
+When an animation is imported/exported, its frame effects are stored in/retrieved from a custom property named `frame_effects` in the corresponding action object.
+The `frame_effects` custom property is a dictionary where each entry consists of a frame number (key) and an effect name (value).
+It can be edited in the `Custom Properties` section of the action in Blender's Action Editor view.
+
 # Demo
 Futuristic doors in Gothic 3...
 

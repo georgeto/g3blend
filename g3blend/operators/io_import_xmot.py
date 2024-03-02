@@ -6,7 +6,7 @@ from mathutils import Vector, Matrix, Quaternion
 
 import g3blend.log as logging
 from g3blend.ksy.xmot import Xmot
-from g3blend.util import read_genomfle, find_armature
+from g3blend.util import read_genomfle, find_armature, lookup_strtab
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +22,9 @@ def _to_blend_vec_tuple(vector: Xmot.Vector) -> tuple[float, float, float]:
 def _to_blend_vec(vector: Xmot.Vector) -> Vector:
     return Vector((vector.x, vector.y, vector.z))
 
+
+def _lookup_strtab(xmot: Xmot, index: Xmot.String) -> str:
+    return lookup_strtab(xmot.meta.tail, index.strtab_index)
 
 def _detect_frame_time(xmot: Xmot):
     # TODO: ...
@@ -68,6 +71,10 @@ def load_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
     if animation_data is None:
         animation_data = arm_obj.animation_data_create()
     animation_data.action = action
+
+    # Store frame effects as custom properties
+    frame_effects = {str(f.key_frame): _lookup_strtab(xmot, f.effect_name) for f in xmot.frame_effects}
+    action["frame_effects"] = frame_effects
 
     last_motion_part = None
     bone_matrics = {}
