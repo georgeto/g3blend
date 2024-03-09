@@ -86,10 +86,14 @@ def similar_values_iter(v1, v2, epsilon=1e-6):
 def find_armature(context: bpy.types.Context) -> Optional[bpy.types.Object]:
     # TODO: Find actor by name or at least check compatibility?
     actor_obj = context.active_object
-    arm_obj = next((c for c in actor_obj.children if c.type == 'ARMATURE'), None)
-    if arm_obj is None and actor_obj.parent:
-        arm_obj = next((c for c in actor_obj.parent.children if c.type == 'ARMATURE'), None)
-    return arm_obj
+    if actor_obj is None:
+        return None
+
+    if arm_obj := next((c for c in actor_obj.children if c.type == 'ARMATURE'), None):
+        return arm_obj
+
+    if actor_obj.parent:
+        return next((c for c in actor_obj.parent.children if c.type == 'ARMATURE'), None)
 
 
 # Note: Taken from KrxImpExp
