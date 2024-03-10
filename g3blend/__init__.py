@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 bl_info = {
     "name": "Gothic 3",
     "author": "georgeto",
-    "version": (0, 0, 4),
+    "version": (0, 0, 5),
     "description": "Gothic 3 Import/Export meshes, materials, textures, animations",
     "blender": (3, 5, 0),
     "location": "File > Import-Export",
