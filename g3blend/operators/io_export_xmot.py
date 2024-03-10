@@ -164,7 +164,7 @@ def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
                     frame_type = Xmot.QuaternionKeyFrame
                 # Scaling
                 case 'S':
-                    value_map = lambda p, v: _from_blend_vec(p, (rest_matrix @ Matrix.LocRotScale(None, None, v)).to_translation().to_3d())
+                    value_map = lambda p, v: _from_blend_vec(p, (rest_matrix @ Matrix.LocRotScale(None, None, v)).to_scale().to_3d())
                     frame_type = Xmot.VectorKeyFrame
                 case _:
                     continue

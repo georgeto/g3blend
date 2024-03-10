@@ -136,7 +136,7 @@ def load_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
                 # Scaling
                 case 'S':
                     curve_path = 'scale'
-                    value_extract = lambda v: (pre_matrix @ Matrix.LocRotScale(None, None, _to_blend_vec(v)) @ post_matrix).to_translation().to_3d()
+                    value_extract = lambda v: (pre_matrix @ Matrix.LocRotScale(None, None, _to_blend_vec(v)) @ post_matrix).to_scale().to_3d()
                     num_channels = 3
                 case _:
                     print('Unsupported animation type:', keyframe_chunk.animation_type)
