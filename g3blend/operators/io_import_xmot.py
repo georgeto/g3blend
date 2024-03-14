@@ -6,7 +6,7 @@ from mathutils import Vector, Matrix, Quaternion
 
 import g3blend.log as logging
 from g3blend.ksy.xmot import Xmot
-from g3blend.util import read_genomfle, find_armature, lookup_strtab
+from g3blend.util import read_genomfle, find_armature, lookup_strtab, bone_correction_matrix, bone_correction_matrix_inv
 
 logger = logging.getLogger(__name__)
 
@@ -89,9 +89,9 @@ def load_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
         if isinstance(chunk.content, Xmot.CnkMotionPart):
             last_motion_part = chunk.content.name.data
             # This should be the rest matrix (local to parent).
-            last_motion_part_rest_matrix = Matrix.LocRotScale(_to_blend_vec(chunk.content.pose_position),
-                                                              _to_blend_quat(chunk.content.pose_rotation),
-                                                              _to_blend_vec(chunk.content.pose_scale))
+            motion_part_pose_matrix = Matrix.LocRotScale(_to_blend_vec(chunk.content.pose_position),
+                                                         _to_blend_quat(chunk.content.pose_rotation),
+                                                         _to_blend_vec(chunk.content.pose_scale))
 
             if last_motion_part not in arm_obj.pose.bones:
                 continue
@@ -101,13 +101,21 @@ def load_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
             bone = pose_bone.bone
             rest_matrix = bone.matrix_local
             if bone.parent is not None:
-                rest_matrix = bone.parent.matrix_local.inverted_safe() @ rest_matrix
+                rest_matrix = (bone.parent.matrix_local @ bone_correction_matrix_inv).inverted_safe() @ rest_matrix
             # TODO: Instead we might have to update the rest position on each animation import.
             #       Not sure how stable it is to set pose bone matrix here.
             #       Probably very inconvenient for the animator (might want to use the "Clear Transformations" feature).
             #       Or maybe just create an initial keyframe for all bones without animation?
-            last_motion_part_rest_matrix_inv = rest_matrix.inverted_safe()
-            pose_bone.matrix_basis = last_motion_part_rest_matrix_inv @ last_motion_part_rest_matrix
+            rest_matrix_inv = rest_matrix.inverted_safe()
+            # The symmetry here is O = (B @ C)^-1 * (P * X) * C
+            # with B @ C: Bone (bone.matrix_local)
+            #      C: Correction (bone_correct_matrix),
+            #      P: Parent (bone.parent.matrix_local @ bone_correction_matrix_inv)
+            #      X: Xmot-Pose (motion_part_pose_matrix)
+            #      O: pose_bone.matrix_basis
+            pre_matrix = rest_matrix_inv
+            post_matrix = bone_correction_matrix
+            pose_bone.matrix_basis = pre_matrix @ motion_part_pose_matrix @ post_matrix
         elif isinstance(chunk.content, Xmot.CnkKeyFrame):
             if last_motion_part is None:
                 raise ValueError('KeyFrame chunk must be preceded by a MotionPart chunk.')
@@ -118,8 +126,6 @@ def load_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
 
             # Lookup bone
             pose_bone = arm_obj.pose.bones[last_motion_part]
-            pre_matrix = last_motion_part_rest_matrix_inv
-            post_matrix = Matrix()
 
             keyframe_chunk = chunk.content
             match keyframe_chunk.animation_type:

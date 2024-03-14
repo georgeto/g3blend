@@ -6,7 +6,8 @@ from mathutils import Vector, Matrix, Quaternion
 
 import g3blend.log as logging
 from g3blend.ksy.xact import Xact
-from g3blend.util import read_genomfle, get_chunks_by_type, get_chunk_by_type, similar_values_iter, get_child_nodes
+from g3blend.util import read_genomfle, get_chunks_by_type, get_chunk_by_type, similar_values_iter, get_child_nodes, \
+    bone_correction_matrix, bone_correction_matrix_inv
 
 logger = logging.getLogger(__name__)
 
@@ -120,7 +121,6 @@ def _import_armature(context: bpy.types.Context, name: str, xact: Xact, global_m
     arm_data = bpy.data.armatures.new(name=f'{name}_armature')
     arm_data.show_names = show_bone_names
     arm_data.show_axes = show_bone_axes
-    arm_data.display_type = 'STICK'
     arm = bpy.data.objects.new(name=f'{name}_armature', object_data=arm_data)
     arm.show_in_front = True
 
@@ -140,7 +140,7 @@ def _import_armature(context: bpy.types.Context, name: str, xact: Xact, global_m
     nodes = get_chunks_by_type(Xact.CnkNode, xact.actor.chunks)
     for node in nodes:
         if not node.parent.data:
-            _import_armature_node(arm_data, Matrix(), None, node, nodes)
+            _import_armature_node(arm_data, Matrix(), Matrix(), None, node, nodes)
 
     # Exit Edit mode
     bpy.ops.object.mode_set(mode='OBJECT')
@@ -148,6 +148,18 @@ def _import_armature(context: bpy.types.Context, name: str, xact: Xact, global_m
     # TODO: Set pose matrix...
 
     return arm
+
+
+def _is_helper_joint_root(node: Xact.CnkNode):
+    return node.name.data.endswith('_ROOT')
+
+
+def _is_helper_joint_end(node: Xact.CnkNode):
+    return node.name.data.endswith('_END')
+
+
+def _is_helper_joint_slot(node: Xact.CnkNode):
+    return node.name.data.startswith('Slot_')
 
 
 def _is_obsolete_joint(node: Xact.CnkNode):
@@ -162,57 +174,43 @@ def _is_obsolete_joint(node: Xact.CnkNode):
     return (name.endswith('_ROOT') or name.endswith('_END')) and len(name.split('_')) > 2
 
 
-def _import_armature_node(arm_data: bpy.types.Armature, parent_matrix: Matrix, parent_bone: Optional[bpy.types.EditBone],
-                          node: Xact.CnkNode, nodes: list[Xact.CnkNode]):
+def _import_armature_node(arm_data: bpy.types.Armature, parent_matrix: Matrix, parent_correction_matrix_inv: Matrix,
+                          parent_bone: Optional[bpy.types.EditBone], node: Xact.CnkNode, nodes: list[Xact.CnkNode]):
     # TODO: Scale...
     # Oh, the problem is that scale is all zeroes, but what is about scale_orient :/
     local_matrix = Matrix.LocRotScale(_to_blend_vec(node.position), _to_blend_quat(node.rotation), None)
-    bone_matrix = parent_matrix @ local_matrix
+    bone_matrix = parent_matrix @ parent_correction_matrix_inv @ local_matrix
 
     children = list(get_child_nodes(node, nodes))
 
-    # From FBX
-    # So that our bone gets its final length, but still Y-aligned in armature space.
+    bone_size = 0.0
+    num_childs = 0
+    for child in children:
+        # _ROOT nodes help us to figure out the length of bones that have multiple children, by ignoring the _ROOT nodes.
+        # (For example Hero_Spine_Spine_1 with left and right hip _ROOTs).
+        # _END nodes help us to figure out the length of bones that have no "real" children.
+        if not _is_helper_joint_root(child) and not _is_helper_joint_slot(child):
+            bone_size += _to_blend_vec(child.position).magnitude
+            num_childs += 1
+
+    if num_childs > 0:
+        bone_size /= num_childs
+
     # 0-length bones are automatically collapsed into their parent when you leave edit mode,
     # so this enforces a minimum length.
-    # TODO: bone.tail (distance to bones, see __CalcBoneBoundBox and collect_armature_meshes)
-    bone_size = 0.0
-    #for child in children:
-    #    bone_size += _to_blend_vec(child.position).magnitude
-    #if len(children):
-    #    bone_size /= len(children)
-
-    # OHHHHHH, finally I get it!
-    # TODO: _ROOT and _END are there to describe bones.
-
-    # The algorithm to connect bones is to search in their orientation direction for intersections with other bones (see __CalcBoneBoundBox in KrxAscImp).
-    # The algorith works great with Scavenger (_ROOT and _END), also for the door it is fine I guess, the bones are just not connected there...
-    # Nah, the bone length is weird, for example Door_ROOT does not make much sense I guess.
+    bone_tail = Vector((0.0, 1.0, 0.0)) * max(0.01, bone_size)
 
     # The orientation and tail of bones is irrelevant for animations, at least for the door that is the case.
     # Probably the orientation and size of bones is only relevant if we want to skin a new mesh to a skeleton.
     # Automatic or area select based skinning algorithms probably calculate skinning weights based closeness to bone.
 
-    # TODO: Rotate around z axis to match X direction (local bone direction in 3ds max) to Y direction (default local bone direction in blender)
+    # Compute bone correction matrix.
+    bone_matrix = bone_matrix @ bone_correction_matrix
 
-    # TODO: Use FBX find_correction_matrix as inspiration?
-
-    # From KrxImpExp bone_utils.py
-    """
-    # Matrix to rotate local axes of all bones for better looking of models in Blender which were created in 3ds max.
-    # (In 3dsmax any bone lies along its local X direction, however in Blender any bone lies along its local Y direction,
-    # so we can want to rotate axes around Z direction to match the directions).
-    __bone_prep_rotation_matrix = Quaternion(Vector((0,0,1)), pi/2).to_matrix()
-    #__bone_prep_rotation_matrix = Matrix.Identity(3) #test
-    __bone_prep_rotation_matrix_inverted = __bone_prep_rotation_matrix.inverted()
-    """
-
-    obsolete = _is_obsolete_joint(node)
-
-    if not obsolete:
+    if not _is_obsolete_joint(node):
         edit_bone = arm_data.edit_bones.new(name=node.name.data)
         edit_bone.select = True
-        edit_bone.tail = Vector((0.0, 0.0, 1.0)) * max(1.0, bone_size)
+        edit_bone.tail = bone_tail
         edit_bone.matrix = bone_matrix
         edit_bone.parent = parent_bone
         if parent_bone is not None and similar_values_iter(edit_bone.tail, parent_bone.head):
@@ -221,6 +219,6 @@ def _import_armature_node(arm_data: bpy.types.Armature, parent_matrix: Matrix, p
         edit_bone = parent_bone
 
     for child in children:
-        _import_armature_node(arm_data, bone_matrix, edit_bone, child, nodes)
+        _import_armature_node(arm_data, bone_matrix, bone_correction_matrix_inv, edit_bone, child, nodes)
 
 # TODO: Attach stuff (slots?) to bone, see link_skeleton_children()...

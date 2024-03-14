@@ -48,11 +48,9 @@ class AxisHelper:
         flip_forward = Matrix.LocRotScale(None, None, Vector((1, -1, 1)))
         global_matrix = (Matrix.Scale(global_scale, 4) @ flip_forward @
             axis_conversion(from_forward=self.axis_forward, from_up=self.axis_up).to_4x4())
-        print(global_matrix)
-
+        
         # TODO: Support baking of from/to Gothic 3 global transformation. Currently the global transformation
         #       is stored/applied in matrix_basis of mesh object and armature object.
-
 
         return global_scale, global_matrix
 

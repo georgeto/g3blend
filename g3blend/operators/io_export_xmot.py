@@ -6,7 +6,7 @@ from mathutils import Quaternion, Vector, Matrix
 
 import g3blend.log as logging
 from g3blend.ksy.xmot import Xmot
-from g3blend.util import set_genomfle, write_genomfle, find_armature
+from g3blend.util import set_genomfle, write_genomfle, find_armature, bone_correction_matrix_inv
 
 logger = logging.getLogger(__name__)
 
@@ -114,10 +114,17 @@ def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
         rest_matrix = bone_obj.matrix_local
         # We need the parent relative rest matrix.
         if bone_obj.parent:
-            rest_matrix = bone_obj.parent.matrix_local.inverted_safe() @ rest_matrix
+            rest_matrix = (bone_obj.parent.matrix_local @ bone_correction_matrix_inv).inverted_safe() @ rest_matrix
+
+        # This derives from the calculation in import_xmot:
+        # O = (B @ C)^-1 * (P * C^-1 * X) * C -> X = (P)^-1 * (B @ C) * O * C^-1
+        pre_matrix = rest_matrix
+        post_matrix = bone_correction_matrix_inv
 
         # pose position = rest position (edit bone) @ pose base matrix (pose_bone.matrix_basis)
-        pose_matrix = rest_matrix @ pose_bone.matrix_basis
+        pose_matrix = pre_matrix @ pose_bone.matrix_basis @ post_matrix
+
+        # matrix_basis = last_motion_part_rest_matrix_inv @ parent_correction_matrix_inv @ last_motion_part_rest_matrix @ bone_correction_matrix
 
         loc, rot, scale = pose_matrix.decompose()
 
@@ -156,15 +163,15 @@ def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
             match animation_type:
                 # Position
                 case 'P':
-                    value_map = lambda p, v: _from_blend_vec(p, (rest_matrix @ Matrix.Translation(v)).to_translation())
+                    value_map = lambda p, v: _from_blend_vec(p, (pre_matrix @ Matrix.Translation(v) @ post_matrix).to_translation())
                     frame_type = Xmot.VectorKeyFrame
                 # Rotation
                 case 'R':
-                    value_map = lambda p, v: _from_blend_quat(p, (rest_matrix @ v.to_matrix().to_4x4()).to_quaternion())
+                    value_map = lambda p, v: _from_blend_quat(p, (pre_matrix @ v.to_matrix().to_4x4() @ post_matrix).to_quaternion())
                     frame_type = Xmot.QuaternionKeyFrame
                 # Scaling
                 case 'S':
-                    value_map = lambda p, v: _from_blend_vec(p, (rest_matrix @ Matrix.LocRotScale(None, None, v)).to_scale().to_3d())
+                    value_map = lambda p, v: _from_blend_vec(p, (pre_matrix @ Matrix.LocRotScale(None, None, v) @ post_matrix).to_scale().to_3d())
                     frame_type = Xmot.VectorKeyFrame
                 case _:
                     continue

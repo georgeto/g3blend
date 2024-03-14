@@ -2,6 +2,7 @@ import math
 from typing import Type, TypeVar, cast, Any, Iterable, Optional
 
 import bpy
+from bpy_extras.io_utils import axis_conversion
 
 from g3blend.ksy.genomfle import Genomfle
 from g3blend.ksy.kaitaistruct import KaitaiStream
@@ -82,6 +83,12 @@ def similar_values_iter(v1, v2, epsilon=1e-6):
     """Return True if iterables v1 and v2 are nearly the same."""
     return v1 == v2 or all(math.isclose(c1, c2, rel_tol=epsilon) for c1, c2 in zip(v1, v2))
 
+
+# Matrix to rotate local axes of all bones for better looking of models in Blender which were created in 3ds max.
+# (In 3dsmax any bone lies along its local X direction, however in Blender any bone lies along its local Y direction,
+# so we can want to rotate axes around Z direction to match the directions).
+bone_correction_matrix = axis_conversion(from_forward='Y', from_up='Z', to_forward='X', to_up='Y').to_4x4()
+bone_correction_matrix_inv = bone_correction_matrix.inverted_safe()
 
 def find_armature(context: bpy.types.Context) -> Optional[bpy.types.Object]:
     # TODO: Find actor by name or at least check compatibility?
