@@ -213,7 +213,7 @@ def _import_armature_node(arm_data: bpy.types.Armature, parent_matrix: Matrix, p
         edit_bone.tail = bone_tail
         edit_bone.matrix = bone_matrix
         edit_bone.parent = parent_bone
-        if parent_bone is not None and similar_values_iter(edit_bone.tail, parent_bone.head):
+        if parent_bone is not None and similar_values_iter(edit_bone.head, parent_bone.tail, epsilon=1e-3):
             edit_bone.use_connect = True
     else:
         edit_bone = parent_bone

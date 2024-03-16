@@ -79,9 +79,9 @@ def lookup_strtab(meta: Genomfle.GenomfleTail, index: int) -> str:
         raise IndexError(f'Stringtable lookup with out of range index {index} (has {meta.num_strtbl_entries} entries)')
 
 
-def similar_values_iter(v1, v2, epsilon=1e-6):
+def similar_values_iter(v1, v2, epsilon=1e-4):
     """Return True if iterables v1 and v2 are nearly the same."""
-    return v1 == v2 or all(math.isclose(c1, c2, rel_tol=epsilon) for c1, c2 in zip(v1, v2))
+    return v1 == v2 or all(math.isclose(c1, c2, abs_tol=epsilon) for c1, c2 in zip(v1, v2))
 
 
 # Matrix to rotate local axes of all bones for better looking of models in Blender which were created in 3ds max.
