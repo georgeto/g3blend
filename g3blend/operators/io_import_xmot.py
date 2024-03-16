@@ -2,29 +2,15 @@ import math
 from pathlib import Path
 
 import bpy
-from mathutils import Matrix, Quaternion, Vector
+from mathutils import Matrix
 
 from .. import log as logging
-from ..ksy.xmot import Xmot
-from ..util import bone_correction_matrix, bone_correction_matrix_inv, find_armature, lookup_strtab, read_genomfle
+from ..io.animation.chunks import AnimationType, InterpolationType, KeyFrameChunk, MotionPartChunk
+from ..io.animation.xmot import ResourceAnimationMotion as Xmot
+from ..util import bone_correction_matrix, bone_correction_matrix_inv, find_armature, read_genome_file, to_blend_quat, \
+    to_blend_vec
 
 logger = logging.getLogger(__name__)
-
-
-def _to_blend_quat(quat: Xmot.Quaternion) -> Quaternion:
-    return Quaternion((quat.w, quat.x, quat.y, quat.z))
-
-
-def _to_blend_vec_tuple(vector: Xmot.Vector) -> tuple[float, float, float]:
-    return vector.x, vector.y, vector.z
-
-
-def _to_blend_vec(vector: Xmot.Vector) -> Vector:
-    return Vector((vector.x, vector.y, vector.z))
-
-
-def _lookup_strtab(xmot: Xmot, index: Xmot.String) -> str:
-    return lookup_strtab(xmot.meta.tail, index.strtab_index)
 
 
 def _detect_frame_time(xmot: Xmot):
@@ -55,7 +41,7 @@ def _detect_frame_time(xmot: Xmot):
 
 def load_xmot(context: bpy.types.Context, filepath: str, global_scale: float, global_matrix: Matrix):
     name = Path(filepath).stem
-    xmot = read_genomfle(Xmot, filepath)
+    xmot = read_genome_file(Path(filepath), Xmot)
 
     arm_obj = find_armature(context)
     if arm_obj is None:
@@ -74,25 +60,17 @@ def load_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
     animation_data.action = action
 
     # Store frame effects as custom properties
-    frame_effects = {str(f.key_frame): _lookup_strtab(xmot, f.effect_name) for f in xmot.frame_effects}
+    frame_effects = {str(f.key_frame): f.effect_name for f in xmot.frame_effects}
     action["frame_effects"] = frame_effects
 
     last_motion_part = None
-    bone_matrics = {}
-    for chunk in xmot.motion.chunks.chunks:
-        if isinstance(chunk.content, Xmot.CnkMotionPart):
-            matrix = Matrix.LocRotScale(_to_blend_vec(chunk.content.pose_position),
-                                        _to_blend_quat(chunk.content.pose_rotation),
-                                        _to_blend_vec(chunk.content.pose_scale))
-            bone_matrics[chunk.content.name.data] = matrix
-
-    for chunk in xmot.motion.chunks.chunks:
-        if isinstance(chunk.content, Xmot.CnkMotionPart):
-            last_motion_part = chunk.content.name.data
+    for chunk in xmot.motion.chunks:
+        if isinstance(chunk, MotionPartChunk):
+            last_motion_part = chunk.name
             # This should be the rest matrix (local to parent).
-            motion_part_pose_matrix = Matrix.LocRotScale(_to_blend_vec(chunk.content.pose_position),
-                                                         _to_blend_quat(chunk.content.pose_rotation),
-                                                         _to_blend_vec(chunk.content.pose_scale))
+            motion_part_pose_matrix = Matrix.LocRotScale(to_blend_vec(chunk.pose_position),
+                                                         to_blend_quat(chunk.pose_rotation),
+                                                         to_blend_vec(chunk.pose_scale))
 
             if last_motion_part not in arm_obj.pose.bones:
                 continue
@@ -117,7 +95,7 @@ def load_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
             pre_matrix = rest_matrix_inv
             post_matrix = bone_correction_matrix
             pose_bone.matrix_basis = pre_matrix @ motion_part_pose_matrix @ post_matrix
-        elif isinstance(chunk.content, Xmot.CnkKeyFrame):
+        elif isinstance(chunk, KeyFrameChunk):
             if last_motion_part is None:
                 raise ValueError('KeyFrame chunk must be preceded by a MotionPart chunk.')
 
@@ -128,24 +106,24 @@ def load_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
             # Lookup bone
             pose_bone = arm_obj.pose.bones[last_motion_part]
 
-            keyframe_chunk = chunk.content
+            keyframe_chunk = chunk
             match keyframe_chunk.animation_type:
                 # Position
-                case 'P':
+                case AnimationType.Position:
                     curve_path = 'location'
                     value_extract = lambda v: (
-                            pre_matrix @ Matrix.Translation(_to_blend_vec(v)) @ post_matrix).to_translation()
+                            pre_matrix @ Matrix.Translation(to_blend_vec(v)) @ post_matrix).to_translation()
                     num_channels = 3
                 # Rotation
-                case 'R':
+                case AnimationType.Rotation:
                     curve_path = 'rotation_quaternion'
                     value_extract = lambda v: (
-                            pre_matrix @ _to_blend_quat(v).to_matrix().to_4x4() @ post_matrix).to_quaternion()
+                            pre_matrix @ to_blend_quat(v).to_matrix().to_4x4() @ post_matrix).to_quaternion()
                     num_channels = 4
                 # Scaling
-                case 'S':
+                case AnimationType.Scaling:
                     curve_path = 'scale'
-                    value_extract = lambda v: (pre_matrix @ Matrix.LocRotScale(None, None, _to_blend_vec(
+                    value_extract = lambda v: (pre_matrix @ Matrix.LocRotScale(None, None, to_blend_vec(
                         v)) @ post_matrix).to_scale().to_3d()
                     num_channels = 3
                 case _:
@@ -154,10 +132,10 @@ def load_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
 
             match keyframe_chunk.interpolation_type:
                 # Linear
-                case 'L':
+                case InterpolationType.Linear:
                     interpolation = 'LINEAR'
                 # Bezier
-                case 'B':
+                case InterpolationType.Bezier:
                     interpolation = 'BEZIER'
                 case _:
                     print('Unsupported interpolation type:', keyframe_chunk.interpolation_type)

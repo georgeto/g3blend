@@ -1,82 +1,60 @@
 import math
-from typing import Any, Iterable, Optional, Type, TypeVar, cast
+from pathlib import Path
+from typing import Iterable, Optional, Type, TypeVar
 
 import bpy
 from bpy_extras.io_utils import axis_conversion
+from mathutils import Matrix, Quaternion, Vector
 
-from .ksy.genomfle import Genomfle
-from .ksy.kaitaistruct import KaitaiStream
+from .io import genome_file
+from .io.binary import BinaryReader, BinaryWriter, TBinarySerializable
+from .io.types.math import bCQuaternion, bCVector, bCVector2
 
 T = TypeVar('T')
 
 
-def read_genomfle(obj_type: Type[T], path) -> T:
-    with open(path, 'rb') as f:
-        obj = obj_type(KaitaiStream(f))
-        obj._read()
-        obj._fetch_instances()
-        return obj
+def read_genome_file(file: Path, content_type: Type[TBinarySerializable]) -> TBinarySerializable:
+    return genome_file.read(BinaryReader(Path(file)), content_type)
 
 
-def write_genomfle(obj, path):
-    with open(path, 'wb') as f:
-        stream = KaitaiStream(f)
-
-        # Write header and body
-        obj.meta.tail__to_write = False
-        obj._write(stream)
-
-        # Update the tail offset
-        obj.meta.header.tail_offset = stream.pos()
-
-        # Write the tail
-        obj.meta.tail._write(stream)
-
-        # Write updated header again
-        stream.seek(0)
-        obj.meta.header._write(stream)
+def write_genome_file(file: Path, content: TBinarySerializable) -> None:
+    writer = BinaryWriter()
+    genome_file.write(writer, content)
+    file.write_bytes(writer.buf())
 
 
-def set_genomfle(obj, strtbl: list[str], version: int = 1):
-    genomfle = Genomfle()
-    genomfle.header = genomfle.cst(Genomfle.GenomfleHeader)
-    genomfle.header.version = version
-    genomfle.header.tail_offset = 0
-
-    genomfle.tail = genomfle.cst(Genomfle.GenomfleTail)
-    genomfle.tail.strtbl_present = 1
-    strtbl_entries = []
-    for entry in strtbl:
-        entry_str = genomfle.tail.cst(Genomfle.GenomfleStr)
-        entry_str.data = entry
-        strtbl_entries.append(entry_str)
-    genomfle.tail.strtbl_entries = strtbl_entries
-
-    obj.meta = genomfle
+def to_blend_quat(quat: bCQuaternion) -> Quaternion:
+    return Quaternion((quat.w, quat.x, quat.y, quat.z))
 
 
-def get_chunks_by_type(chunk_type: Type[T], chunks: Any) -> list[T]:
-    return [chunk.content for chunk in chunks.chunks if isinstance(chunk.content, chunk_type)]
+def to_blend_vec(vector: bCVector) -> Vector:
+    return Vector((vector.x, vector.y, vector.z))
 
 
-def get_chunk_by_type(chunk_type: Type[T], chunks: Any) -> T:
-    typed_chunks = get_chunks_by_type(chunk_type, chunks)
-    assert len(typed_chunks) == 1
-    return cast(T, typed_chunks[0])
+def to_blend_vec_tuple(vector: bCVector) -> tuple[float, float, float]:
+    return vector.x, vector.y, vector.z
+
+
+def to_blend_vec_tuple_transform(vector: bCVector, transform: Matrix) -> tuple[float, float, float]:
+    vec = to_blend_vec(vector)
+    vec = transform @ vec
+    return vec.x, vec.y, vec.z
+
+
+def to_blend_vec2_tuple(vector: bCVector2) -> tuple[float, float]:
+    return vector.x, vector.y
+
+
+def _from_blend_quat(quat: Quaternion) -> bCQuaternion:
+    return bCQuaternion(quat.x, quat.y, quat.z, quat.w)
+
+
+def _from_blend_vec(vector: Vector) -> bCVector:
+    return bCVector(vector.x, vector.y, vector.z)
 
 
 def get_child_nodes(node: T, nodes: list[T]) -> Iterable[T]:
-    return (child for child in nodes if child.parent.data == node.name.data)
-
-
-def lookup_strtab(meta: Genomfle.GenomfleTail, index: int) -> str:
-    if not meta.strtbl_present:
-        raise IndexError('Stringtable lookup in file without stringtable.')
-
-    if index < meta.num_strtbl_entries:
-        return meta.strtbl_entries[index].data
-    else:
-        raise IndexError(f'Stringtable lookup with out of range index {index} (has {meta.num_strtbl_entries} entries)')
+    return (child for child in nodes if child.parent == node.name)
 
 
 def similar_values_iter(v1, v2, epsilon=1e-4):

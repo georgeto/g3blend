@@ -1,64 +1,31 @@
 from collections import defaultdict
-from typing import Any, Optional, Type, TypeVar
+from pathlib import Path
+from typing import Any, Optional
 
 import bpy
 from mathutils import Matrix, Quaternion, Vector
 
 from .. import log as logging
-from ..ksy.xmot import Xmot
-from ..util import bone_correction_matrix_inv, find_armature, set_genomfle, write_genomfle
+from ..io.animation.chunks import AnimationType, InterpolationType, KeyFrameChunk, MotionPartChunk, \
+    QuaternionKeyFrame, \
+    VectorKeyFrame
+from ..io.animation.xmot import ResourceAnimationMotion as Xmot, eCWrapper_emfx2Motion, eSFrameEffect
+from ..io.types.misc import bCDateTime
+from ..util import _from_blend_quat, _from_blend_vec, bone_correction_matrix_inv, find_armature, write_genome_file
 
 logger = logging.getLogger(__name__)
 
 
-def _from_str(parent, data: str) -> Xmot.LmaString:
-    lma_str = parent.cst(Xmot.LmaString)
-    lma_str.data = data
-    return lma_str
-
-
-_C = TypeVar('_C')
-
-
-def _add_chunk(chunks: Xmot.Chunks, id: Xmot.LmaChunkId, version: int, type: Type[_C]) -> _C:
-    chunk = chunks.cst(Xmot.Chunk)
-    chunk.chunk_id = id
-    chunk.version = version
-    chunk.content = chunk.cst(type)
-    chunks.chunks.append(chunk)
-    return chunk.content
-
-
-def _from_blend_quat(parent, quat: Quaternion) -> Xmot.Quaternion:
-    xquat = parent.cst(Xmot.Quaternion)
-    xquat.x = quat.x
-    xquat.y = quat.y
-    xquat.z = quat.z
-    xquat.w = quat.w
-    return xquat
-
-
-def _from_blend_vec(parent, vector: Vector) -> Xmot.Vector:
-    xvector = parent.cst(Xmot.Vector)
-    xvector.x = vector.x
-    xvector.y = vector.y
-    xvector.z = vector.z
-    return xvector
-
-
 def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, global_matrix: Matrix):
     xmot = Xmot()
-    xmot.version = 5
     xmot.resource_size = 0
     xmot.resource_priority = 0.0
-    xmot.native_file_time = 0  # TODO?
+    xmot.native_file_time = bCDateTime(0)  # TODO?
     xmot.native_file_size = 0
-    xmot.unk_file_time = 0
-    xmot.frame_effects = []
+    xmot.unk_file_time = bCDateTime(0)
 
-    motion = xmot.motion = xmot.cst(Xmot.Emfx2Motion)
-    chunks = motion.chunks = motion.cst(Xmot.Chunks)
-    chunks.chunks = []
+    motion = xmot.motion = eCWrapper_emfx2Motion()
+    motion.chunks = []
 
     # 1. Find armature
     arm_obj = find_armature(context)
@@ -83,13 +50,13 @@ def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
         # TODO: Consider rotation mode of object?
         if prop_name == 'location':
             interpolation, frames = _extract_frames_from_curves(curves, 3, Vector)
-            animation_type = 'P'
+            animation_type = AnimationType.Position
         elif prop_name == 'rotation_quaternion':
             interpolation, frames = _extract_frames_from_curves(curves, 4, Quaternion)
-            animation_type = 'R'
+            animation_type = AnimationType.Rotation
         elif prop_name == 'scale':
             interpolation, frames = _extract_frames_from_curves(curves, 3, Vector)
-            animation_type = 'S'
+            animation_type = AnimationType.Scaling
         else:
             logger.warning('Unsupported property {} for bone {}.', prop_name, pose_bone.name)
             continue
@@ -130,16 +97,16 @@ def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
 
         loc, rot, scale = pose_matrix.decompose()
 
-        motion_part = _add_chunk(chunks, Xmot.LmaChunkId.motionpart, 3, Xmot.CnkMotionPart)
-        motion_part.name = _from_str(motion_part, pose_bone.name)
-        motion_part.pose_position = _from_blend_vec(motion_part, loc)
-        motion_part.pose_rotation = _from_blend_quat(motion_part, rot)
-        motion_part.pose_scale = _from_blend_vec(motion_part, scale)
-        motion_part.bind_pose_position = _from_blend_vec(motion_part, loc)
-        motion_part.bind_pose_rotation = _from_blend_quat(motion_part, rot)
-        motion_part.bind_pose_scale = _from_blend_vec(motion_part, scale)
+        motion_part = motion.add_chunk(MotionPartChunk)
+        motion_part.name = pose_bone.name
+        motion_part.pose_position = _from_blend_vec(loc)
+        motion_part.pose_rotation = _from_blend_quat(rot)
+        motion_part.pose_scale = _from_blend_vec(scale)
+        motion_part.bind_pose_position = _from_blend_vec(loc)
+        motion_part.bind_pose_rotation = _from_blend_quat(rot)
+        motion_part.bind_pose_scale = _from_blend_vec(scale)
 
-        for animation_type in ['P', 'R', 'S']:
+        for animation_type in AnimationType:
             key = (pose_bone.name, animation_type)
             if key not in frames_per_bone:
                 continue
@@ -148,64 +115,49 @@ def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
             match interpolation:
                 # Linear
                 case 'LINEAR':
-                    interpolation_type = 'L'
+                    interpolation_type = InterpolationType.Linear
                 # Bezier
                 case 'BEZIER':
-                    interpolation_type = 'B'
+                    interpolation_type = InterpolationType.Bezier
                 case _:
                     logger.warning('Unsupported interpolation: {}', interpolation)
                     continue
 
-            key_frame = _add_chunk(chunks, Xmot.LmaChunkId.anim, 1, Xmot.CnkKeyFrame)
+            key_frame = motion.add_chunk(KeyFrameChunk)
             key_frame.interpolation_type = interpolation_type
             key_frame.animation_type = animation_type
-            key_frame.reserverd = 0
             key_frame.frames = []
 
             match animation_type:
                 # Position
-                case 'P':
-                    value_map = lambda p, v: _from_blend_vec(p, (
-                            pre_matrix @ Matrix.Translation(v) @ post_matrix).to_translation())
-                    frame_type = Xmot.VectorKeyFrame
+                case AnimationType.Position:
+                    value_map = lambda p, v: _from_blend_vec(
+                        (pre_matrix @ Matrix.Translation(v) @ post_matrix).to_translation())
+                    frame_type = VectorKeyFrame
                 # Rotation
-                case 'R':
-                    value_map = lambda p, v: _from_blend_quat(p, (
-                            pre_matrix @ v.to_matrix().to_4x4() @ post_matrix).to_quaternion())
-                    frame_type = Xmot.QuaternionKeyFrame
+                case AnimationType.Rotation:
+                    value_map = lambda p, v: _from_blend_quat(
+                        (pre_matrix @ v.to_matrix().to_4x4() @ post_matrix).to_quaternion())
+                    frame_type = QuaternionKeyFrame
                 # Scaling
-                case 'S':
-                    value_map = lambda p, v: _from_blend_vec(p, (
-                            pre_matrix @ Matrix.LocRotScale(None, None, v) @ post_matrix).to_scale().to_3d())
-                    frame_type = Xmot.VectorKeyFrame
+                case AnimationType.Scaling:
+                    value_map = lambda p, v: _from_blend_vec(
+                        (pre_matrix @ Matrix.LocRotScale(None, None, v) @ post_matrix).to_scale().to_3d())
+                    frame_type = VectorKeyFrame
                 case _:
                     continue
 
             for time, value in frames:
-                xframe = key_frame.cst(frame_type)
+                xframe = frame_type()
                 # TODO: Proper time/FPS scaling
                 xframe.time = time / 25
                 xframe.value = value_map(xframe, value)
                 key_frame.frames.append(xframe)
 
-    # Write frame effects.
-    strtbl = []
-    for frame, effect in _extract_frame_effects(action).items():
-        key_frame = int(frame)
-        if effect in strtbl:
-            strbl_index = strtbl.index(effect)
-        else:
-            strbl_index = len(strtbl)
-            strtbl.append(effect)
+    # Extract frame effects.
+    xmot.frame_effects = [eSFrameEffect(int(frame), effect) for frame, effect in _extract_frame_effects(action).items()]
 
-        frame_effect = xmot.cst(Xmot.FrameEffect)
-        frame_effect.key_frame = key_frame
-        frame_effect.effect_name = frame_effect.cst(Xmot.String)
-        frame_effect.effect_name.strtab_index = strbl_index
-        xmot.frame_effects.append(frame_effect)
-
-    set_genomfle(xmot, strtbl)
-    write_genomfle(xmot, filepath)
+    write_genome_file(Path(filepath), xmot)
 
     # From FBX:
     # For meshes, when armature export is enabled, disable Armature modifiers here!
