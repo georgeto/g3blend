@@ -1,12 +1,12 @@
 from collections import defaultdict
-from typing import TypeVar, Type, Optional, Any
+from typing import Any, Optional, Type, TypeVar
 
 import bpy
-from mathutils import Quaternion, Vector, Matrix
+from mathutils import Matrix, Quaternion, Vector
 
-import g3blend.log as logging
-from g3blend.ksy.xmot import Xmot
-from g3blend.util import set_genomfle, write_genomfle, find_armature, bone_correction_matrix_inv
+from .. import log as logging
+from ..ksy.xmot import Xmot
+from ..util import bone_correction_matrix_inv, find_armature, set_genomfle, write_genomfle
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +18,8 @@ def _from_str(parent, data: str) -> Xmot.LmaString:
 
 
 _C = TypeVar('_C')
+
+
 def _add_chunk(chunks: Xmot.Chunks, id: Xmot.LmaChunkId, version: int, type: Type[_C]) -> _C:
     chunk = chunks.cst(Xmot.Chunk)
     chunk.chunk_id = id
@@ -49,7 +51,7 @@ def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
     xmot.version = 5
     xmot.resource_size = 0
     xmot.resource_priority = 0.0
-    xmot.native_file_time = 0 # TODO?
+    xmot.native_file_time = 0  # TODO?
     xmot.native_file_size = 0
     xmot.unk_file_time = 0
     xmot.frame_effects = []
@@ -91,8 +93,8 @@ def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
         else:
             logger.warning('Unsupported property {} for bone {}.', prop_name, pose_bone.name)
             continue
-        #elif prop_name == 'rotation_axis_angle':
-        #elif prop_name == 'rotation_euler':
+        # elif prop_name == 'rotation_axis_angle':
+        # elif prop_name == 'rotation_euler':
 
         key = (pose_bone.name, animation_type)
         if key not in frames_per_bone:
@@ -163,15 +165,18 @@ def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
             match animation_type:
                 # Position
                 case 'P':
-                    value_map = lambda p, v: _from_blend_vec(p, (pre_matrix @ Matrix.Translation(v) @ post_matrix).to_translation())
+                    value_map = lambda p, v: _from_blend_vec(p, (
+                            pre_matrix @ Matrix.Translation(v) @ post_matrix).to_translation())
                     frame_type = Xmot.VectorKeyFrame
                 # Rotation
                 case 'R':
-                    value_map = lambda p, v: _from_blend_quat(p, (pre_matrix @ v.to_matrix().to_4x4() @ post_matrix).to_quaternion())
+                    value_map = lambda p, v: _from_blend_quat(p, (
+                            pre_matrix @ v.to_matrix().to_4x4() @ post_matrix).to_quaternion())
                     frame_type = Xmot.QuaternionKeyFrame
                 # Scaling
                 case 'S':
-                    value_map = lambda p, v: _from_blend_vec(p, (pre_matrix @ Matrix.LocRotScale(None, None, v) @ post_matrix).to_scale().to_3d())
+                    value_map = lambda p, v: _from_blend_vec(p, (
+                            pre_matrix @ Matrix.LocRotScale(None, None, v) @ post_matrix).to_scale().to_3d())
                     frame_type = Xmot.VectorKeyFrame
                 case _:
                     continue
@@ -236,9 +241,10 @@ def _extract_frame_effects(action: bpy.types.Action) -> dict[int, str]:
     return {int(frame): effect for frame, effect in items}
 
 
-def _extract_frames_from_curves(curves: list[bpy.types.FCurve], num_channels: int, combine) -> Optional[tuple[str, list[tuple[float, Any]]]]:
+def _extract_frames_from_curves(curves: list[bpy.types.FCurve], num_channels: int, combine) -> Optional[
+    tuple[str, list[tuple[float, Any]]]]:
     if len(curves) != num_channels:
-        logger.warning('Unexpected number of curves {} vs. {}.',  num_channels, len(curves))
+        logger.warning('Unexpected number of curves {} vs. {}.', num_channels, len(curves))
         return None
 
     channels = []
@@ -246,14 +252,14 @@ def _extract_frames_from_curves(curves: list[bpy.types.FCurve], num_channels: in
     curve: bpy.types.FCurve
     for i, curve in enumerate(sorted(curves, key=lambda c: c.array_index)):
         if curve.array_index != i:
-            logger.warning('Unexpected curve channel {} vs. {}.',  i, curve.array_index)
+            logger.warning('Unexpected curve channel {} vs. {}.', i, curve.array_index)
             return None
 
         if num_keyframes is None:
             num_keyframes = len(curve.keyframe_points)
         else:
             if num_keyframes != len(curve.keyframe_points):
-                logger.warning('Not all channels have same number of frames {} vs. {}.',  num_keyframes,
+                logger.warning('Not all channels have same number of frames {} vs. {}.', num_keyframes,
                                len(curve.keyframe_points))
                 return None
 
@@ -268,7 +274,8 @@ def _extract_frames_from_curves(curves: list[bpy.types.FCurve], num_channels: in
         if common_interpolation is None:
             common_interpolation = interpolation
         elif common_interpolation != interpolation:
-            logger.warning('Not all frames have same interpolation of frames {} vs. {}.',  common_interpolation, interpolation)
+            logger.warning('Not all frames have same interpolation of frames {} vs. {}.', common_interpolation,
+                           interpolation)
             return None
         key_frames.append((frame_time, value))
 

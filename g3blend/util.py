@@ -1,11 +1,11 @@
 import math
-from typing import Type, TypeVar, cast, Any, Iterable, Optional
+from typing import Any, Iterable, Optional, Type, TypeVar, cast
 
 import bpy
 from bpy_extras.io_utils import axis_conversion
 
-from g3blend.ksy.genomfle import Genomfle
-from g3blend.ksy.kaitaistruct import KaitaiStream
+from .ksy.genomfle import Genomfle
+from .ksy.kaitaistruct import KaitaiStream
 
 T = TypeVar('T')
 
@@ -90,6 +90,7 @@ def similar_values_iter(v1, v2, epsilon=1e-4):
 bone_correction_matrix = axis_conversion(from_forward='Y', from_up='Z', to_forward='X', to_up='Y').to_4x4()
 bone_correction_matrix_inv = bone_correction_matrix.inverted_safe()
 
+
 def find_armature(context: bpy.types.Context) -> Optional[bpy.types.Object]:
     # TODO: Find actor by name or at least check compatibility?
     actor_obj = context.active_object
@@ -113,43 +114,43 @@ def reset_scene():
         scn = bpy.data.scenes[i]
         if scn != empty_scn:
             bpy.data.scenes.remove(scn)
-    
+
     # Remove objects
     for i in range(len(bpy.data.objects) - 1, -1, -1):
         obj = bpy.data.objects[i]
         if obj.users == 0:
             bpy.data.objects.remove(obj)
-    
+
     # Remove meshes
     for i in range(len(bpy.data.meshes) - 1, -1, -1):
         msh = bpy.data.meshes[i]
         if msh.users == 0:
             bpy.data.meshes.remove(msh)
-    
+
     # Remove armatures
     for i in range(len(bpy.data.armatures) - 1, -1, -1):
         arm = bpy.data.armatures[i]
         if arm.users == 0:
             bpy.data.armatures.remove(arm)
-    
+
     # Remove actions
     for i in range(len(bpy.data.actions) - 1, -1, -1):
         act = bpy.data.actions[i]
         if act.users == 0:
             bpy.data.actions.remove(act)
-    
+
     # Remove materials
     for i in range(len(bpy.data.materials) - 1, -1, -1):
         mat = bpy.data.materials[i]
         if mat.users == 0:
             bpy.data.materials.remove(mat)
-    
+
     # Remove textures
     for i in range(len(bpy.data.textures) - 1, -1, -1):
         tex = bpy.data.textures[i]
         if tex.users == 0:
             bpy.data.textures.remove(tex)
-    
+
     # Remove images
     for i in range(len(bpy.data.images) - 1, -1, -1):
         img = bpy.data.images[i]

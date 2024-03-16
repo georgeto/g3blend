@@ -2,12 +2,12 @@ from pathlib import Path
 from typing import Optional
 
 import bpy
-from mathutils import Vector, Matrix, Quaternion
+from mathutils import Matrix, Quaternion, Vector
 
-import g3blend.log as logging
-from g3blend.ksy.xact import Xact
-from g3blend.util import read_genomfle, get_chunks_by_type, get_chunk_by_type, similar_values_iter, get_child_nodes, \
-    bone_correction_matrix, bone_correction_matrix_inv
+from .. import log as logging
+from ..ksy.xact import Xact
+from ..util import bone_correction_matrix, bone_correction_matrix_inv, get_child_nodes, get_chunk_by_type, \
+    get_chunks_by_type, read_genomfle, similar_values_iter
 
 logger = logging.getLogger(__name__)
 
@@ -48,15 +48,15 @@ def load_xact(context: bpy.types.Context, filepath: str, global_scale: float, gl
 
     armature_obj = _import_armature(context, name, xact, global_matrix, show_bone_names, show_bone_axes)
     armature_obj.parent = actor_obj
-    #context.scene.collection.objects.link(armature_obj)
-
+    # context.scene.collection.objects.link(armature_obj)
 
     for mesh_obj in _import_meshes(name, xact, armature_obj, global_matrix):
         mesh_obj.parent = actor_obj
         context.scene.collection.objects.link(mesh_obj)
 
 
-def _import_meshes(name: str, xact: Xact, armature_obj: bpy.types.Object, global_matrix: Matrix) -> list[bpy.types.Object]:
+def _import_meshes(name: str, xact: Xact, armature_obj: bpy.types.Object, global_matrix: Matrix) -> list[
+    bpy.types.Object]:
     nodes = get_chunks_by_type(Xact.CnkNode, xact.actor.chunks)
     skinning = get_chunk_by_type(Xact.CnkSkinninginfo, xact.actor.chunks)
 
@@ -81,7 +81,7 @@ def _import_mesh(mesh_name: str, submesh: Xact.Submesh, global_matrix: Matrix) -
     # Vertices and faces
     vertices = [_to_blend_vec_tuple(v.position) for v in submesh.vertices]
     # # TODO: Optionally bake transform of global matrix?
-    #vertices = [_to_blend_vec_tuple_transform(v.position, global_matrix) for v in submesh.vertices]
+    # vertices = [_to_blend_vec_tuple_transform(v.position, global_matrix) for v in submesh.vertices]
     assert len(submesh.indices) % 3 == 0
     faces = list(zip(*([iter(submesh.indices)] * 3), strict=True))
     mesh.from_pydata(vertices, [], faces)

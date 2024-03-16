@@ -1,17 +1,15 @@
 import bpy
-
-from bpy_extras.io_utils import ImportHelper, ExportHelper, orientation_helper, axis_conversion
 from bpy.props import BoolProperty, CollectionProperty, FloatProperty, StringProperty
+from bpy_extras.io_utils import ExportHelper, ImportHelper, axis_conversion, orientation_helper
 from mathutils import Matrix, Vector
 
-from .operators.io_import_xact import load_xact
-from .operators.io_import_xmot import load_xmot
+from . import log as logging
 from .operators.io_export_xact import save_xact
 from .operators.io_export_xmot import save_xmot
+from .operators.io_import_xact import load_xact
+from .operators.io_import_xmot import load_xmot
+from .util import reset_scene, units_blender_to_g3_factor
 
-from g3blend.util import reset_scene, units_blender_to_g3_factor
-
-import g3blend.log as logging
 logger = logging.getLogger(__name__)
 
 bl_info = {
@@ -27,19 +25,15 @@ bl_info = {
     "category": "Import-Export",
 }
 
-# TODO: Check blender version
-#if bl_info['blender'] > bpy.app.version:
-#	raise BlenderVersionError(f"This addon requires Blender >= {bl_info['blender']}")
-
 
 # Swap Y and Z and then flip forward direction to convert from left-handed (Gothic 3) to right-handed (Blender).
 @orientation_helper(axis_forward='Z', axis_up='Y')  # defaults: to_forward='Y', to_up='Z'
 class AxisHelper:
     global_scale: FloatProperty(
-            name="Scale",
-            min=0.001, max=1000.0,
-            default=1.0,
-            )
+        name="Scale",
+        min=0.001, max=1000.0,
+        default=1.0,
+    )
 
     def _global_transform(self, context):
         global_scale = self.global_scale
@@ -47,8 +41,8 @@ class AxisHelper:
 
         flip_forward = Matrix.LocRotScale(None, None, Vector((1, -1, 1)))
         global_matrix = (Matrix.Scale(global_scale, 4) @ flip_forward @
-            axis_conversion(from_forward=self.axis_forward, from_up=self.axis_up).to_4x4())
-        
+                         axis_conversion(from_forward=self.axis_forward, from_up=self.axis_up).to_4x4())
+
         # TODO: Support baking of from/to Gothic 3 global transformation. Currently the global transformation
         #       is stored/applied in matrix_basis of mesh object and armature object.
 

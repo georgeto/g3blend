@@ -2,11 +2,11 @@ import math
 from pathlib import Path
 
 import bpy
-from mathutils import Vector, Matrix, Quaternion
+from mathutils import Matrix, Quaternion, Vector
 
-import g3blend.log as logging
-from g3blend.ksy.xmot import Xmot
-from g3blend.util import read_genomfle, find_armature, lookup_strtab, bone_correction_matrix, bone_correction_matrix_inv
+from .. import log as logging
+from ..ksy.xmot import Xmot
+from ..util import bone_correction_matrix, bone_correction_matrix_inv, find_armature, lookup_strtab, read_genomfle
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +25,7 @@ def _to_blend_vec(vector: Xmot.Vector) -> Vector:
 
 def _lookup_strtab(xmot: Xmot, index: Xmot.String) -> str:
     return lookup_strtab(xmot.meta.tail, index.strtab_index)
+
 
 def _detect_frame_time(xmot: Xmot):
     # TODO: ...
@@ -132,17 +133,20 @@ def load_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
                 # Position
                 case 'P':
                     curve_path = 'location'
-                    value_extract = lambda v:  (pre_matrix @ Matrix.Translation(_to_blend_vec(v)) @ post_matrix).to_translation()
+                    value_extract = lambda v: (
+                            pre_matrix @ Matrix.Translation(_to_blend_vec(v)) @ post_matrix).to_translation()
                     num_channels = 3
                 # Rotation
                 case 'R':
                     curve_path = 'rotation_quaternion'
-                    value_extract = lambda v: (pre_matrix @ _to_blend_quat(v).to_matrix().to_4x4() @ post_matrix).to_quaternion()
+                    value_extract = lambda v: (
+                            pre_matrix @ _to_blend_quat(v).to_matrix().to_4x4() @ post_matrix).to_quaternion()
                     num_channels = 4
                 # Scaling
                 case 'S':
                     curve_path = 'scale'
-                    value_extract = lambda v: (pre_matrix @ Matrix.LocRotScale(None, None, _to_blend_vec(v)) @ post_matrix).to_scale().to_3d()
+                    value_extract = lambda v: (pre_matrix @ Matrix.LocRotScale(None, None, _to_blend_vec(
+                        v)) @ post_matrix).to_scale().to_3d()
                     num_channels = 3
                 case _:
                     print('Unsupported animation type:', keyframe_chunk.animation_type)
