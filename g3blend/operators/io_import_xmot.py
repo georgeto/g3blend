@@ -7,8 +7,8 @@ from mathutils import Matrix
 from .. import log as logging
 from ..io.animation.chunks import AnimationType, InterpolationType, KeyFrameChunk, MotionPartChunk
 from ..io.animation.xmot import ResourceAnimationMotion as Xmot
-from ..util import bone_correction_matrix, bone_correction_matrix_inv, find_armature, read_genome_file, to_blend_quat, \
-    to_blend_vec
+from ..util import bone_correction_matrix, bone_correction_matrix_inv, calc_arm_root_transformation, find_armature, \
+    read_genome_file, to_blend_quat, to_blend_vec
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,8 @@ def _detect_frame_time(xmot: Xmot):
     """
 
 
-def load_xmot(context: bpy.types.Context, filepath: str, global_scale: float, global_matrix: Matrix):
+def load_xmot(context: bpy.types.Context, filepath: str, global_scale: float, global_matrix: Matrix,
+              ignore_transform: bool):
     name = Path(filepath).stem
     xmot = read_genome_file(Path(filepath), Xmot)
 
@@ -63,12 +64,16 @@ def load_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
     frame_effects = {str(f.key_frame): f.effect_name for f in xmot.frame_effects}
     action["frame_effects"] = frame_effects
 
+    root_scale, root_matrix_no_scale = calc_arm_root_transformation(arm_obj.matrix_basis, global_scale,
+                                                                    global_matrix, ignore_transform)
+
     last_motion_part = None
     for chunk in xmot.motion.chunks:
+        # TODO: Should we reset pose matrix (to rest matrix) of bones for which the xmot does not specify a pose matrix?
         if isinstance(chunk, MotionPartChunk):
             last_motion_part = chunk.name
             # This should be the rest matrix (local to parent).
-            motion_part_pose_matrix = Matrix.LocRotScale(to_blend_vec(chunk.pose_position),
+            motion_part_pose_matrix = Matrix.LocRotScale(to_blend_vec(chunk.pose_position) * root_scale,
                                                          to_blend_quat(chunk.pose_rotation),
                                                          to_blend_vec(chunk.pose_scale))
 
@@ -76,24 +81,28 @@ def load_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
                 continue
 
             pose_bone = arm_obj.pose.bones[last_motion_part]
-            # Set pose matrix used in xmot (relative to bone's rest matrix)
             bone = pose_bone.bone
+            # Rest matrices in xact and pose matrices in the xmot are always relative to the parent bone.
+            # Whereas rest matrices in Blender are absolute and pose matrices in blender are relative to the
+            # rest matrix of the bone.
+            # Therefore, we have to calculate the parent relative bone rest matrix,
+            # and then calculate rest_matrix.inverted() * motion_part_pose_matrix.
             rest_matrix = bone.matrix_local
-            if bone.parent is not None:
+            if bone.parent:
                 rest_matrix = (bone.parent.matrix_local @ bone_correction_matrix_inv).inverted_safe() @ rest_matrix
-            # TODO: Instead we might have to update the rest position on each animation import.
-            #       Not sure how stable it is to set pose bone matrix here.
-            #       Probably very inconvenient for the animator (might want to use the "Clear Transformations" feature).
-            #       Or maybe just create an initial keyframe for all bones without animation?
+            else:
+                rest_matrix = root_matrix_no_scale.inverted_safe() @ rest_matrix
             rest_matrix_inv = rest_matrix.inverted_safe()
-            # The symmetry here is O = (B @ C)^-1 * (P * X) * C
-            # with B @ C: Bone (bone.matrix_local)
+
+            # The symmetry here is O = (B * C)^-1 * ((P * C * C^-1 * X) * C)
+            # with B * C: Absolute Rest matrix (bone.matrix_local)
             #      C: Correction (bone_correct_matrix),
-            #      P: Parent (bone.parent.matrix_local @ bone_correction_matrix_inv)
-            #      X: Xmot-Pose (motion_part_pose_matrix)
-            #      O: pose_bone.matrix_basis
+            #      P * C: Absolute Parent Rest matrix (bone.parent.matrix_local)
+            #      X: Xmot Pose matrix (motion_part_pose_matrix)
+            #      O: Pose Matrix (pose_bone.matrix_basis)
             pre_matrix = rest_matrix_inv
             post_matrix = bone_correction_matrix
+            # Set pose matrix used in xmot (relative to bone's rest matrix).
             pose_bone.matrix_basis = pre_matrix @ motion_part_pose_matrix @ post_matrix
         elif isinstance(chunk, KeyFrameChunk):
             if last_motion_part is None:
@@ -111,8 +120,8 @@ def load_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
                 # Position
                 case AnimationType.Position:
                     curve_path = 'location'
-                    value_extract = lambda v: (
-                            pre_matrix @ Matrix.Translation(to_blend_vec(v)) @ post_matrix).to_translation()
+                    value_extract = lambda v: (pre_matrix @ Matrix.Translation(
+                        to_blend_vec(v) * root_scale) @ post_matrix).to_translation()
                     num_channels = 3
                 # Rotation
                 case AnimationType.Rotation:

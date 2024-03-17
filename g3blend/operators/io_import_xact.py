@@ -9,13 +9,13 @@ from ..io.animation.chunks import MeshChunk, NodeChunk, SkinningInfoChunk, Subme
 from ..io.animation.xact import ResourceAnimationActor as Xact, eCWrapper_emfx2Actor
 from ..util import bone_correction_matrix, bone_correction_matrix_inv, get_child_nodes, read_genome_file, \
     similar_values_iter, to_blend_quat, to_blend_vec, to_blend_vec2_tuple, \
-    to_blend_vec_tuple
+    to_blend_vec_tuple, to_blend_vec_tuple_transform
 
 logger = logging.getLogger(__name__)
 
 
 def load_xact(context: bpy.types.Context, filepath: str, global_scale: float, global_matrix: Matrix,
-              show_bone_names: bool, show_bone_axes: bool):
+              show_bone_names: bool, show_bone_axes: bool, bake_transform: bool):
     name = Path(filepath).stem
     xact = read_genome_file(Path(filepath), Xact)
 
@@ -26,17 +26,17 @@ def load_xact(context: bpy.types.Context, filepath: str, global_scale: float, gl
     context.view_layer.objects.active = actor_obj
     actor_obj.select_set(True)
 
-    armature_obj = _import_armature(context, name, xact, global_matrix, show_bone_names, show_bone_axes)
+    armature_obj = _import_armature(context, name, xact, global_matrix, show_bone_names, show_bone_axes, bake_transform)
     armature_obj.parent = actor_obj
     # context.scene.collection.objects.link(armature_obj)
 
-    for mesh_obj in _import_meshes(name, xact.actor, armature_obj, global_matrix):
+    for mesh_obj in _import_meshes(name, xact.actor, armature_obj, global_matrix, bake_transform):
         mesh_obj.parent = actor_obj
         context.scene.collection.objects.link(mesh_obj)
 
 
-def _import_meshes(name: str, actor: eCWrapper_emfx2Actor, armature_obj: bpy.types.Object, global_matrix: Matrix) -> \
-        list[bpy.types.Object]:
+def _import_meshes(name: str, actor: eCWrapper_emfx2Actor, armature_obj: bpy.types.Object, global_matrix: Matrix,
+                   bake_transform: bool) -> list[bpy.types.Object]:
     nodes = actor.get_chunks_by_type(NodeChunk)
     skinning = actor.get_chunk_by_type(SkinningInfoChunk)
 
@@ -44,24 +44,26 @@ def _import_meshes(name: str, actor: eCWrapper_emfx2Actor, armature_obj: bpy.typ
     mesh_chunk = actor.get_chunk_by_type(MeshChunk)
     for submesh in mesh_chunk.submeshes:
         mesh_name = f'{name}_p{mesh_chunk.submeshes.index(submesh)}'
-        mesh = _import_mesh(mesh_name, submesh, global_matrix)
+        mesh = _import_mesh(mesh_name, submesh, global_matrix, bake_transform)
         if mesh is None:
             continue
         mesh_obj = bpy.data.objects.new(mesh_name, mesh)
-        # # TODO: Optionally bake transform of global matrix instead?
-        mesh_obj.matrix_basis = global_matrix
+        # TODO: Optionally bake transform of global matrix instead?
+        if not bake_transform:
+            mesh_obj.matrix_basis = global_matrix
         _import_skinning(submesh, nodes, skinning, mesh_obj, armature_obj)
         meshes.append(mesh_obj)
     return meshes
 
 
-def _import_mesh(mesh_name: str, submesh: Submesh, global_matrix: Matrix) -> bpy.types.Mesh | None:
+def _import_mesh(mesh_name: str, submesh: Submesh, global_matrix: Matrix,
+                 bake_transform: bool) -> bpy.types.Mesh | None:
     mesh = bpy.data.meshes.new(mesh_name)
 
     # Vertices and faces
     vertices = [to_blend_vec_tuple(v.position) for v in submesh.vertices]
-    # # TODO: Optionally bake transform of global matrix?
-    # vertices = [to_blend_vec_tuple_transform(v.position, global_matrix) for v in submesh.vertices]
+    if bake_transform:
+        vertices = [to_blend_vec_tuple_transform(v.position, global_matrix) for v in submesh.vertices]
     assert len(submesh.indices) % 3 == 0
     faces = list(zip(*([iter(submesh.indices)] * 3), strict=True))
     mesh.from_pydata(vertices, [], faces)
@@ -97,7 +99,7 @@ def _import_skinning(submesh: Submesh, nodes: list[NodeChunk], skinning: Skinnin
 
 
 def _import_armature(context: bpy.types.Context, name: str, xact: Xact, global_matrix: Matrix,
-                     show_bone_names: bool, show_bone_axes: bool) -> bpy.types.Object:
+                     show_bone_names: bool, show_bone_axes: bool, bake_transform: bool) -> bpy.types.Object:
     arm_data = bpy.data.armatures.new(name=f'{name}_armature')
     arm_data.show_names = show_bone_names
     arm_data.show_axes = show_bone_axes
@@ -105,8 +107,8 @@ def _import_armature(context: bpy.types.Context, name: str, xact: Xact, global_m
     arm.show_in_front = True
 
     # Apply global matrix as armature basis
-    # TODO: Optionally bake transform of global matrix instead?
-    arm.matrix_basis = global_matrix
+    if not bake_transform:
+        arm.matrix_basis = global_matrix
 
     context.scene.collection.objects.link(arm)
     arm.select_set(True)
@@ -118,14 +120,13 @@ def _import_armature(context: bpy.types.Context, name: str, xact: Xact, global_m
 
     # Import root nodes and their children recursively.
     nodes = xact.actor.get_chunks_by_type(NodeChunk)
+    arm_base_matrix = global_matrix if bake_transform else Matrix()
     for node in nodes:
         if not node.parent:
-            _import_armature_node(arm_data, Matrix(), Matrix(), None, node, nodes)
+            _import_armature_node(arm_data, arm_base_matrix, Matrix(), None, node, nodes)
 
     # Exit Edit mode
     bpy.ops.object.mode_set(mode='OBJECT')
-
-    # TODO: Set pose matrix...
 
     return arm
 

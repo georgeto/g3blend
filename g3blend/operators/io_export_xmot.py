@@ -11,12 +11,14 @@ from ..io.animation.chunks import AnimationType, InterpolationType, KeyFrameChun
     VectorKeyFrame
 from ..io.animation.xmot import ResourceAnimationMotion as Xmot, eCWrapper_emfx2Motion, eSFrameEffect
 from ..io.types.misc import bCDateTime
-from ..util import _from_blend_quat, _from_blend_vec, bone_correction_matrix_inv, find_armature, write_genome_file
+from ..util import _from_blend_quat, _from_blend_vec, bone_correction_matrix_inv, calc_arm_root_transformation, \
+    find_armature, write_genome_file
 
 logger = logging.getLogger(__name__)
 
 
-def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, global_matrix: Matrix):
+def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, global_matrix: Matrix,
+              ignore_transform: bool):
     xmot = Xmot()
     xmot.resource_size = 0
     xmot.resource_priority = 0.0
@@ -76,33 +78,44 @@ def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
     # Have to jump to first frame of animation so that pose_bone.matrix_basis is set to value of the first frame.
     context.scene.frame_current = 0
 
+    root_scale, root_matrix_no_scale = calc_arm_root_transformation(arm_obj.matrix_basis, global_scale,
+                                                                    global_matrix, ignore_transform)
+    if isinstance(root_scale, Vector):
+        root_scale_inv = Vector((1 / root_scale.x, 1 / root_scale.y, 1 / root_scale.z))
+    else:
+        root_scale_inv = 1 / root_scale
+
     # 3. Collect all bones in armature
     for pose_bone in reversed(arm_obj.pose.bones):
-        bone_obj = pose_bone.bone
-
-        rest_matrix = bone_obj.matrix_local
-        # We need the parent relative rest matrix.
-        if bone_obj.parent:
-            rest_matrix = (bone_obj.parent.matrix_local @ bone_correction_matrix_inv).inverted_safe() @ rest_matrix
+        bone = pose_bone.bone
+        rest_matrix = bone.matrix_local
+        if bone.parent:
+            rest_matrix = (bone.parent.matrix_local @ bone_correction_matrix_inv).inverted_safe() @ rest_matrix
+        else:
+            rest_matrix = root_matrix_no_scale.inverted_safe() @ rest_matrix
 
         # This derives from the calculation in import_xmot:
-        # O = (B @ C)^-1 * (P * C^-1 * X) * C -> X = (P)^-1 * (B @ C) * O * C^-1
+        # O = (B * C)^-1 * ((P * C * C^-1 * X) * C)
+        # -> X = (P * C)^-1 * (B * C) * O * C^-1
+        # with B * C: Absolute Rest matrix (bone.matrix_local)
+        #      C: Correction (bone_correct_matrix),
+        #      P * C: Absolute Parent rest matrix (bone.parent.matrix_local)
+        #      X: Xmot Pose Matrix (motion_part_pose_matrix)
+        #      O: Pos Matrix (pose_bone.matrix_basis)
         pre_matrix = rest_matrix
         post_matrix = bone_correction_matrix_inv
 
         # pose position = rest position (edit bone) @ pose base matrix (pose_bone.matrix_basis)
         pose_matrix = pre_matrix @ pose_bone.matrix_basis @ post_matrix
 
-        # matrix_basis = last_motion_part_rest_matrix_inv @ parent_correction_matrix_inv @ last_motion_part_rest_matrix @ bone_correction_matrix
-
         loc, rot, scale = pose_matrix.decompose()
 
         motion_part = motion.add_chunk(MotionPartChunk)
         motion_part.name = pose_bone.name
-        motion_part.pose_position = _from_blend_vec(loc)
+        motion_part.pose_position = _from_blend_vec(loc * root_scale_inv)
         motion_part.pose_rotation = _from_blend_quat(rot)
         motion_part.pose_scale = _from_blend_vec(scale)
-        motion_part.bind_pose_position = _from_blend_vec(loc)
+        motion_part.bind_pose_position = _from_blend_vec(loc * root_scale_inv)
         motion_part.bind_pose_rotation = _from_blend_quat(rot)
         motion_part.bind_pose_scale = _from_blend_vec(scale)
 
@@ -132,7 +145,7 @@ def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
                 # Position
                 case AnimationType.Position:
                     value_map = lambda p, v: _from_blend_vec(
-                        (pre_matrix @ Matrix.Translation(v) @ post_matrix).to_translation())
+                        (pre_matrix @ Matrix.Translation(v) @ post_matrix).to_translation() * root_scale_inv)
                     frame_type = VectorKeyFrame
                 # Rotation
                 case AnimationType.Rotation:

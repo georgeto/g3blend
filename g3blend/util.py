@@ -24,15 +24,15 @@ def write_genome_file(file: Path, content: TBinarySerializable) -> None:
 
 
 def to_blend_quat(quat: bCQuaternion) -> Quaternion:
-    return Quaternion((quat.w, quat.x, quat.y, quat.z))
+    return Quaternion((-quat.w, quat.x, quat.z, quat.y))
 
 
 def to_blend_vec(vector: bCVector) -> Vector:
-    return Vector((vector.x, vector.y, vector.z))
+    return Vector((vector.x, vector.z, vector.y))
 
 
 def to_blend_vec_tuple(vector: bCVector) -> tuple[float, float, float]:
-    return vector.x, vector.y, vector.z
+    return vector.x, vector.z, vector.y
 
 
 def to_blend_vec_tuple_transform(vector: bCVector, transform: Matrix) -> tuple[float, float, float]:
@@ -46,11 +46,11 @@ def to_blend_vec2_tuple(vector: bCVector2) -> tuple[float, float]:
 
 
 def _from_blend_quat(quat: Quaternion) -> bCQuaternion:
-    return bCQuaternion(quat.x, quat.y, quat.z, quat.w)
+    return bCQuaternion(quat.x, quat.z, quat.y, -quat.w)
 
 
 def _from_blend_vec(vector: Vector) -> bCVector:
-    return bCVector(vector.x, vector.y, vector.z)
+    return bCVector(vector.x, vector.z, vector.y)
 
 
 def get_child_nodes(node: T, nodes: list[T]) -> Iterable[T]:
@@ -67,6 +67,43 @@ def similar_values_iter(v1, v2, epsilon=1e-4):
 # so we can want to rotate axes around Z direction to match the directions).
 bone_correction_matrix = axis_conversion(from_forward='Y', from_up='Z', to_forward='X', to_up='Y').to_4x4()
 bone_correction_matrix_inv = bone_correction_matrix.inverted_safe()
+
+toggle_yz_matrix = Matrix(((1, 0, 0, 0), (0, 0, 1, 0), (0, 1, 0, 0), (0, 0, 0, 1)))
+
+
+def without_scale(matrix: Matrix) -> Matrix:
+    return Matrix.LocRotScale(matrix.to_translation(), matrix.to_quaternion(), None)
+
+
+def calc_arm_root_transformation(arm_matrix_base: Matrix, global_scale: float, global_matrix: Matrix,
+                                 ignore_transform: bool) -> \
+        tuple[float | Vector, Matrix]:
+    # If the armature transform is identity (e.g. baked) ignore, does not make a difference.
+    if not ignore_transform:
+        # TODO: Do we care if arm_obj itself is a child of something that has transformation?
+        #       Then we would have to use matrix_world.
+        root_scale = arm_matrix_base.inverted_safe().to_scale() * global_scale
+        root_matrix_no_scale = without_scale(arm_matrix_base).inverted_safe() @ without_scale(global_matrix)
+    else:
+        # Bone transformation in blender do not store scale, we have to account for that manually.
+        root_scale = global_scale
+        root_matrix_no_scale = without_scale(global_matrix)
+    return root_scale, root_matrix_no_scale
+
+
+def toogle_handness_quat(quat: Quaternion) -> Quaternion:
+    return Quaternion((quat.w, quat.x, quat.z, quat.y))
+
+
+def toogle_handness_vec(vec: Vector) -> Vector:
+    return Vector((vec.x, vec.z, vec.y))
+
+
+# The equivalent to switching the Y/Z components of Quaternion or Vector.
+# Convert transformation matrix between left-handed and right-handed coordinate system.
+# See: https://stackoverflow.com/a/12479962
+def toogle_handness_matrix(matrix: Matrix) -> Matrix:
+    return toggle_yz_matrix @ matrix @ toggle_yz_matrix
 
 
 def find_armature(context: bpy.types.Context) -> Optional[bpy.types.Object]:

@@ -1,7 +1,7 @@
 import bpy
 from bpy.props import BoolProperty, CollectionProperty, FloatProperty, StringProperty
 from bpy_extras.io_utils import ExportHelper, ImportHelper, axis_conversion, orientation_helper
-from mathutils import Matrix, Vector
+from mathutils import Matrix
 
 from . import log as logging
 from .operators.io_export_xact import save_xact
@@ -26,8 +26,7 @@ bl_info = {
 }
 
 
-# Swap Y and Z and then flip forward direction to convert from left-handed (Gothic 3) to right-handed (Blender).
-@orientation_helper(axis_forward='Z', axis_up='Y')  # defaults: to_forward='Y', to_up='Z'
+@orientation_helper(axis_forward='-Y', axis_up='Z')  # with to_forward='Y', to_up='Z' (default)
 class AxisHelper:
     global_scale: FloatProperty(
         name="Scale",
@@ -39,8 +38,7 @@ class AxisHelper:
         global_scale = self.global_scale
         global_scale *= (1.0 / units_blender_to_g3_factor(context.scene))
 
-        flip_forward = Matrix.LocRotScale(None, None, Vector((1, -1, 1)))
-        global_matrix = (Matrix.Scale(global_scale, 4) @ flip_forward @
+        global_matrix = (Matrix.Scale(global_scale, 4) @
                          axis_conversion(from_forward=self.axis_forward, from_up=self.axis_up).to_4x4())
 
         # TODO: Support baking of from/to Gothic 3 global transformation. Currently the global transformation
@@ -76,12 +74,20 @@ class ImportXact(bpy.types.Operator, ImportHelper, AxisHelper):
         default=False,
     )
 
+    bake_transform: BoolProperty(
+        name="Apply transform",
+        description="Bake Gothic 3 to Blender space transform into object data, avoids getting unwanted rotations to "
+                    "objects because Gothic 3's space is not aligned with Blender's space",
+        default=True,
+    )
+
     def execute(self, context):
         try:
             global_scale, global_matrix = self._global_transform(context)
             if self.reset_scene:
                 reset_scene()
-            load_xact(context, self.filepath, global_scale, global_matrix, self.show_bone_names, self.show_bone_axes)
+            load_xact(context, self.filepath, global_scale, global_matrix, self.show_bone_names, self.show_bone_axes,
+                      self.bake_transform)
         except Exception as e:
             self.report({'ERROR'}, f'Error while importing {self.filepath}: {e}')
             logger.exception('Error while importing {}', self.filepath)
@@ -133,10 +139,16 @@ class ImportXmot(bpy.types.Operator, ImportHelper, AxisHelper):
         type=bpy.types.OperatorFileListElement,
     )
 
+    ignore_transform: BoolProperty(
+        name="Ignore transform",
+        description="Ignore transform set on the armature object",
+        default=False,
+    )
+
     def execute(self, context):
         try:
             global_scale, global_matrix = self._global_transform(context)
-            load_xmot(context, self.filepath, global_scale, global_matrix)
+            load_xmot(context, self.filepath, global_scale, global_matrix, self.ignore_transform)
         except Exception as e:
             self.report({'ERROR'}, f'Error while importing {self.filepath}: {e}')
             logger.exception('Error while importing {}', self.filepath)
@@ -162,10 +174,16 @@ class ExportXmot(bpy.types.Operator, ExportHelper, AxisHelper):
         default=False,
     )
 
+    ignore_transform: BoolProperty(
+        name="Ignore transform",
+        description="Ignore transform set on the armature object",
+        default=False,
+    )
+
     def execute(self, context):
         try:
             global_scale, global_matrix = self._global_transform(context)
-            save_xmot(context, self.filepath, global_scale, global_matrix)
+            save_xmot(context, self.filepath, global_scale, global_matrix, self.ignore_transform)
         except Exception as e:
             self.report({'ERROR'}, f'Error while exporting {self.filepath}: {e}')
             logger.exception('Error while exporting {}', self.filepath)
