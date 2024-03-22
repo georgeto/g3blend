@@ -6,7 +6,8 @@ import bpy
 from mathutils import Matrix
 
 from .. import log as logging
-from ..io.animation.chunks import AnimationType, InterpolationType, KeyFrameChunk, MotionPartChunk
+from ..io.animation.chunks import AnimationType, InterpolationType, KeyFrame, KeyFrameChunk, MotionPartChunk, \
+    QuaternionKeyFrame, VectorKeyFrame
 from ..io.animation.xmot import ResourceAnimationMotion as Xmot
 from ..util import bone_correction_matrix, bone_correction_matrix_inv, calc_arm_root_transformation, find_armature, \
     read_genome_file, to_blend_quat, to_blend_vec
@@ -116,9 +117,10 @@ def _import_motion_part(chunk: MotionPartChunk, pose_bone: bpy.types.PoseBone, s
     return pre_matrix, post_matrix
 
 
-def _import_key_frame_chunk(keyframe_chunk: KeyFrameChunk, pose_bone: bpy.types.PoseBone,
-                            pre_matrix: Matrix, post_matrix: Matrix, state: _ImportState):
-    match keyframe_chunk.animation_type:
+def _import_key_frames(animation_type: AnimationType, interpolation_type: InterpolationType, frames: list[KeyFrame],
+                       pose_bone: bpy.types.PoseBone, pre_matrix: Matrix, post_matrix: Matrix, state: _ImportState,
+                       synthesized: bool):
+    match animation_type:
         # Position
         case AnimationType.Position:
             curve_path = 'location'
@@ -138,9 +140,9 @@ def _import_key_frame_chunk(keyframe_chunk: KeyFrameChunk, pose_bone: bpy.types.
                 v)) @ post_matrix).to_scale().to_3d()
             num_channels = 3
         case _:
-            raise ValueError(f'Unsupported animation type: {keyframe_chunk.animation_type}')
+            raise ValueError(f'Unsupported animation type: {animation_type}')
 
-    match keyframe_chunk.interpolation_type:
+    match interpolation_type:
         # Linear
         case InterpolationType.Linear:
             interpolation = 'LINEAR'
@@ -148,7 +150,7 @@ def _import_key_frame_chunk(keyframe_chunk: KeyFrameChunk, pose_bone: bpy.types.
         case InterpolationType.Bezier:
             interpolation = 'BEZIER'
         case _:
-            raise ValueError(f'Unsupported interpolation type: {keyframe_chunk.interpolation_type}')
+            raise ValueError(f'Unsupported interpolation type: {interpolation_type}')
 
     prop = pose_bone.path_from_id(curve_path)
     curves = [state.action.fcurves.new(prop, index=channel, action_group=pose_bone.name)
@@ -157,16 +159,19 @@ def _import_key_frame_chunk(keyframe_chunk: KeyFrameChunk, pose_bone: bpy.types.
     # TODO: Cycle vs. Extrapolation
     # Pre-allocate all keyframes
     for channel in range(num_channels):
-        curves[channel].keyframe_points.add(len(keyframe_chunk.frames))
+        curves[channel].keyframe_points.add(len(frames))
 
     # TODO: Proper time/FPS scaling
-    for i, frame in enumerate(keyframe_chunk.frames):
+    for i, frame in enumerate(frames):
         value = value_extract(frame.value)
 
         for channel in range(num_channels):
             keyframe_point = curves[channel].keyframe_points[i]
             keyframe_point.co = frame.time * state.fps, value[channel]
             keyframe_point.interpolation = interpolation
+            if synthesized:
+                # Just a visual highlight for synthesized frames, has no functional implication.
+                keyframe_point.type = 'JITTER'
 
         state.update_frame_time(frame.time)
 
@@ -208,11 +213,24 @@ def load_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
             logger.warning('Unknown MotionPart, skipping motion: {}', motion_part.name)
             continue
 
-        # Lookup bone
         pose_bone = arm_obj.pose.bones[motion_part.name]
         pre_matrix, post_matrix = _import_motion_part(motion_part, pose_bone, state)
-        for key_frame in key_frames:
-            _import_key_frame_chunk(key_frame, pose_bone, pre_matrix, post_matrix, state)
+        for key_frame_chunk in key_frames:
+            _import_key_frames(key_frame_chunk.animation_type, key_frame_chunk.interpolation_type,
+                               key_frame_chunk.frames, pose_bone, pre_matrix, post_matrix, state, synthesized=False)
+
+        # If the pose position/rotation/scale (separately) of a bone is constant across the entire animation,
+        # there is no key frame chunk for this property. To retain the pose of such a motion part, we have to
+        # synthesize a key frame for it (on export we filter out these constant key frames again).
+        if not any(f.animation_type == AnimationType.Position for f in key_frames):
+            _import_key_frames(AnimationType.Position, InterpolationType.Linear,
+                               [VectorKeyFrame(0.0, motion_part.pose_position)],
+                               pose_bone, pre_matrix, post_matrix, state, synthesized=True)
+
+        if not any(f.animation_type == AnimationType.Rotation for f in key_frames):
+            _import_key_frames(AnimationType.Rotation, InterpolationType.Linear,
+                               [QuaternionKeyFrame(0.0, motion_part.pose_rotation)],
+                               pose_bone, pre_matrix, post_matrix, state, synthesized=True)
 
     if state.min_frame_time is not None:
         context.scene.frame_start = math.trunc(state.min_frame_time * fps)

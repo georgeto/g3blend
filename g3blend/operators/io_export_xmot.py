@@ -146,11 +146,6 @@ def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
                     logger.warning('Unsupported interpolation: {}', interpolation)
                     continue
 
-            key_frame = motion.add_chunk(KeyFrameChunk)
-            key_frame.interpolation_type = interpolation_type
-            key_frame.animation_type = animation_type
-            key_frame.frames = []
-
             match animation_type:
                 # Position
                 case AnimationType.Position:
@@ -169,6 +164,16 @@ def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
                     frame_type = VectorKeyFrame
                 case _:
                     continue
+            # If the pose position/rotation/scale (separately) of a bone is constant across the entire animation,
+            # there is no key frame chunk for this property. To retain the pose of such a motion part, the xmot import
+            # has to synthesize a key frame for it. Here on export we filter out these constant key frames again,
+            if len(frames) < 1 or (len(frames) == 1 and frames[0][0] == 0.0):
+                continue
+
+            key_frame = motion.add_chunk(KeyFrameChunk)
+            key_frame.interpolation_type = interpolation_type
+            key_frame.animation_type = animation_type
+            key_frame.frames = []
 
             for time, value in frames:
                 xframe = frame_type()

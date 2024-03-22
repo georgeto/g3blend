@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from enum import Enum, IntEnum
 from typing import Generic, Type, TypeVar
 
@@ -286,11 +287,13 @@ class AnimationType(Enum):
     Scaling = b'S'
 
 
+@dataclass(slots=True)
 class KeyFrame(BinarySerializable, Generic[KeyFrameValueType], ABC):
-    time: float  # time in seconds
-    value: KeyFrameValueType
+    time: float = None  # time in seconds
+    value: KeyFrameValueType = None
 
 
+@dataclass(slots=True)
 class VectorKeyFrame(KeyFrame[bCVector]):
     def read(self, reader: BinaryReader) -> None:
         self.time = reader.read_float()
@@ -301,6 +304,7 @@ class VectorKeyFrame(KeyFrame[bCVector]):
         writer.write_vec3(self.value)
 
 
+@dataclass(slots=True)
 class QuaternionKeyFrame(KeyFrame[bCQuaternion]):
     def read(self, reader: BinaryReader) -> None:
         self.time = reader.read_float()
