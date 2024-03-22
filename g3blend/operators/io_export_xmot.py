@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, global_matrix: Matrix,
-              ignore_transform: bool):
+              ignore_transform: bool, use_selection: bool):
     xmot = Xmot()
     xmot.resource_size = 0
     xmot.resource_priority = 0.0
@@ -86,8 +86,13 @@ def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
         root_scale_inv = 1 / root_scale
 
     # 3. Collect all bones in armature
+    selected_pose_bones = context.selected_pose_bones
     for pose_bone in reversed(arm_obj.pose.bones):
+        if use_selection and pose_bone not in selected_pose_bones:
+            continue
+
         bone = pose_bone.bone
+
         rest_matrix = bone.matrix_local
         if bone.parent:
             rest_matrix = (bone.parent.matrix_local @ bone_correction_matrix_inv).inverted_safe() @ rest_matrix

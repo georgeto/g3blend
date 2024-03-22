@@ -183,7 +183,7 @@ class ExportXmot(bpy.types.Operator, ExportHelper, AxisHelper):
     def execute(self, context):
         try:
             global_scale, global_matrix = self._global_transform(context)
-            save_xmot(context, self.filepath, global_scale, global_matrix, self.ignore_transform)
+            save_xmot(context, self.filepath, global_scale, global_matrix, self.ignore_transform, self.use_selection)
         except Exception as e:
             self.report({'ERROR'}, f'Error while exporting {self.filepath}: {e}')
             logger.exception('Error while exporting {}', self.filepath)
