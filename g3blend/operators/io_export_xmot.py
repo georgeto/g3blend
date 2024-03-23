@@ -51,23 +51,28 @@ def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
 
         # TODO: Consider rotation mode of object?
         if prop_name == 'location':
-            interpolation, frames = _extract_frames_from_curves(curves, 3, Vector)
+            frames = _extract_frames_from_curves(curves, 3, Vector)
             animation_type = AnimationType.Position
         elif prop_name == 'rotation_quaternion':
-            interpolation, frames = _extract_frames_from_curves(curves, 4, Quaternion)
+            frames = _extract_frames_from_curves(curves, 4, Quaternion)
             animation_type = AnimationType.Rotation
         elif prop_name == 'scale':
-            interpolation, frames = _extract_frames_from_curves(curves, 3, Vector)
+            frames = _extract_frames_from_curves(curves, 3, Vector)
             animation_type = AnimationType.Scaling
         else:
-            logger.warning('Unsupported property {} for bone {}.', prop_name, pose_bone.name)
-            continue
+            raise ValueError(f'Unsupported property keyframe {prop_name} for bone {pose_bone.name}.')
+        # TODO: Convert from the following formats to quaternion?
         # elif prop_name == 'rotation_axis_angle':
         # elif prop_name == 'rotation_euler':
 
+        if frames is None:
+            raise ValueError(
+                f'Failed to extract keyframe property {prop_name} for bone {pose_bone.name}. '
+                f'Please consult the console for details.')
+
         key = (pose_bone.name, animation_type)
         if key not in frames_per_bone:
-            frames_per_bone[key] = (interpolation, frames)
+            frames_per_bone[key] = frames
         else:
             logger.warning('More than one track for {}.', key)
 
@@ -205,8 +210,7 @@ def _extract_frame_effects(action: bpy.types.Action) -> dict[int, str]:
 
     items = getattr(frame_effects, "items", lambda: None)()
     if items is None:
-        logger.error("The frame_effects property of action must be a dictionary.")
-        return {}
+        raise ValueError("The frame_effects property of action must be a dictionary.")
 
     return {int(frame): effect for frame, effect in items}
 
