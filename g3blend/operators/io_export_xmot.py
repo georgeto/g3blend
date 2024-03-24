@@ -12,13 +12,13 @@ from ..io.animation.chunks import AnimationType, InterpolationType, KeyFrameChun
 from ..io.animation.xmot import ResourceAnimationMotion as Xmot, eCWrapper_emfx2Motion, eSFrameEffect
 from ..io.types.misc import bCDateTime
 from ..util import _from_blend_quat, _from_blend_vec, bone_correction_matrix_inv, calc_arm_root_transformation, \
-    find_armature, write_genome_file
+    write_genome_file
 
 logger = logging.getLogger(__name__)
 
 
-def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, global_matrix: Matrix,
-              ignore_transform: bool, use_selection: bool):
+def save_xmot(context: bpy.types.Context, filepath: str, arm_obj: bpy.types.Object, global_scale: float,
+              global_matrix: Matrix, ignore_transform: bool, use_selection: bool):
     xmot = Xmot()
     xmot.resource_size = 0
     xmot.resource_priority = 0.0
@@ -30,9 +30,8 @@ def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
     motion.chunks = []
 
     # 1. Find armature
-    arm_obj = find_armature(context)
     if arm_obj is None:
-        raise ValueError('No selected armature found.')
+        raise ValueError('No armature was selected.')
 
     # 2. Figure out keyframe/animation data for each bone
     action = arm_obj.animation_data.action

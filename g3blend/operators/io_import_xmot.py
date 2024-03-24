@@ -9,8 +9,8 @@ from .. import log as logging
 from ..io.animation.chunks import AnimationType, InterpolationType, KeyFrame, KeyFrameChunk, MotionPartChunk, \
     QuaternionKeyFrame, VectorKeyFrame
 from ..io.animation.xmot import ResourceAnimationMotion as Xmot
-from ..util import bone_correction_matrix, bone_correction_matrix_inv, calc_arm_root_transformation, find_armature, \
-    read_genome_file, to_blend_quat, to_blend_vec
+from ..util import bone_correction_matrix, bone_correction_matrix_inv, calc_arm_root_transformation, read_genome_file, \
+    to_blend_quat, to_blend_vec
 
 logger = logging.getLogger(__name__)
 
@@ -180,14 +180,13 @@ def _import_key_frames(animation_type: AnimationType, interpolation_type: Interp
         curve.update()
 
 
-def load_xmot(context: bpy.types.Context, filepath: str, global_scale: float, global_matrix: Matrix,
-              ignore_transform: bool):
+def load_xmot(context: bpy.types.Context, filepath: str, arm_obj: bpy.types.Object, global_scale: float,
+              global_matrix: Matrix, ignore_transform: bool):
     name = Path(filepath).stem
     xmot = read_genome_file(Path(filepath), Xmot)
 
-    arm_obj = find_armature(context)
     if arm_obj is None:
-        raise ValueError("No selected armature found.")
+        raise ValueError("No target armature was selected.")
 
     fps = _detect_frame_time(xmot)
 
