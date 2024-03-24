@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import bpy
 from bpy.props import BoolProperty, StringProperty
 from bpy_extras.io_utils import ImportHelper
@@ -23,6 +25,11 @@ class ImportXact(bpy.types.Operator, ImportHelper, AxisHelper):
         name='Reset scene',
         description='Remove everything from scene before import',
         default=False,
+    )
+
+    actor_name: StringProperty(
+        name='Actor name',
+        description='By default derived from xact file name, can be overwritten, for example to import an actor twice',
     )
 
     bake_transform: BoolProperty(
@@ -52,8 +59,10 @@ class ImportXact(bpy.types.Operator, ImportHelper, AxisHelper):
             global_scale, global_matrix = self._global_transform(context)
             if self.reset_scene:
                 reset_scene()
-            load_xact(context, self.filepath, global_scale, global_matrix, self.show_bone_names, self.show_bone_axes,
-                      self.bake_transform)
+            load_xact(context, Path(self.filepath), self.actor_name, global_scale, global_matrix, self.show_bone_names,
+                      self.show_bone_axes, self.bake_transform)
+            # Reset actor name override on successful import.
+            self.actor_name = ''
         except Exception as e:
             self.report({'ERROR'}, f'Error while importing {self.filepath}: {e}')
             logger.exception('Error while importing {}', self.filepath)
@@ -86,6 +95,7 @@ class G3BLEND_PT_import_xact_misc(AbstractFilePanel):
 
     def _draw(self, context: bpy.types.Context, layout: bpy.types.UILayout, operator: bpy.types.Operator):
         layout.prop(operator, 'reset_scene')
+        layout.prop(operator, 'actor_name')
 
 
 classes = (

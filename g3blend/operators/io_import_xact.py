@@ -14,10 +14,10 @@ from ..util import bone_correction_matrix, bone_correction_matrix_inv, get_child
 logger = logging.getLogger(__name__)
 
 
-def load_xact(context: bpy.types.Context, filepath: str, global_scale: float, global_matrix: Matrix,
+def load_xact(context: bpy.types.Context, filepath: Path, actor_name: str, global_scale: float, global_matrix: Matrix,
               show_bone_names: bool, show_bone_axes: bool, bake_transform: bool):
-    name = Path(filepath).stem
-    xact = read_genome_file(Path(filepath), Xact)
+    name = actor_name if actor_name else filepath.stem
+    xact = read_genome_file(filepath, Xact)
 
     # Create and select object for actor
     # TODO: With this approach meshes are not deleted properly (on reimport they get .001 prefix)
