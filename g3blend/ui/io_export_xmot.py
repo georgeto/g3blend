@@ -38,10 +38,32 @@ class ExportXmot(bpy.types.Operator, ExportHelper, AxisHelper):
         get=_get_target_armature,
     )
 
-    use_selection: BoolProperty(
-        name='Selection Only',
-        description='Export selected objects only',
-        default=False,
+    # Overlay / Normal / Interactive
+    # All Bones
+    # Bones with Keyframes
+    # Selected Bones
+    # TODO: <Groups>
+    # All Bones (including unused slots)
+    # Selected Bones (including unused slots)
+    bone_filter: EnumProperty(
+        name='Bones',
+        description='Bones that shall be included in the exported animation',
+        items=[
+            ('ALL', 'All', 'Include all bones (slots not commonly used in animations are filtered out)'),
+            ('WITH_KEYFRAMES', 'With Keyframes',
+             'Include only bones that have keyframe data assigned. '
+             'Especially useful when re-exporting a modified animation, because for example overlay animations'
+             '(recognizable by their _O_ infix) only apply to a part of the skeleton. '
+             'In such an xmot, only a subset of bones is contained and on import keyframe data is only created for these bones.'
+             "When re-exporting later with 'With Keyframes' ensures that only this subset of bones is included."),
+            ('SELECTED', 'Selected',
+             'Include only selected bones (slots not commonly used in animations are filtered out)'),
+            ('ALL_WITH_SLOTS', 'All (including uncommon slots)',
+             'Include all bones (including slots not commonly used in animations)'),
+            ('SELECTED_WITH_SLOTS', 'Selected (including uncommon slots)',
+             'Include only selected bones (including slots not commonly used in animations)'),
+        ],
+        default='WITH_KEYFRAMES',
     )
 
     ignore_transform: BoolProperty(
@@ -58,7 +80,7 @@ class ExportXmot(bpy.types.Operator, ExportHelper, AxisHelper):
             global_scale, global_matrix = self._global_transform(context)
             target_armature = get_object_for_armature_item(context, self.target_armature)
             save_xmot(context, self.filepath, target_armature, global_scale, global_matrix, self.ignore_transform,
-                      self.use_selection)
+                      self.bone_filter)
             self.target_armature_index = 0
         except Exception as e:
             self.report({'ERROR'}, f'Error while exporting {self.filepath}: {e}')
@@ -77,7 +99,7 @@ class G3BLEND_PT_export_xmot_export(AbstractFilePanel):
         target_armature = get_object_for_armature_item(context, operator.target_armature)
         sub = layout.row()
         sub.enabled = target_armature is not None
-        sub.prop(operator, "use_selection")
+        sub.prop(operator, "bone_filter")
 
 
 class G3BLEND_PT_export_xmot_transform(AbstractFileTransformPanel):

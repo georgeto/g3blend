@@ -16,9 +16,16 @@ from ..util import _from_blend_quat, _from_blend_vec, bone_correction_matrix_inv
 
 logger = logging.getLogger(__name__)
 
+# These are the only slots commonly used animations.
+COMMONLY_USED_SLOTS = {
+    'Slot_LeftHand_Weapon',  # relevant for everything except faces
+    'Slot_RightHand_Weapon',  # relevant for everything except faces
+    'Slot_Beard',  # relevant for faces
+}
+
 
 def save_xmot(context: bpy.types.Context, filepath: str, arm_obj: bpy.types.Object, global_scale: float,
-              global_matrix: Matrix, ignore_transform: bool, use_selection: bool):
+              global_matrix: Matrix, ignore_transform: bool, bone_filter: str):
     xmot = Xmot()
     xmot.resource_size = 0
     xmot.resource_priority = 0.0
@@ -32,6 +39,10 @@ def save_xmot(context: bpy.types.Context, filepath: str, arm_obj: bpy.types.Obje
     # 1. Find armature
     if arm_obj is None:
         raise ValueError('No armature was selected.')
+
+    use_selection = bone_filter in ['SELECTED', 'SELECTED_WITH_SLOTS']
+    with_keysframes = bone_filter == 'WITH_KEYFRAMES'
+    filter_slots = not with_keysframes and bone_filter not in ['ALL_WITH_SLOTS', 'SELECTED_WITH_SLOTS']
 
     # 2. Figure out keyframe/animation data for each bone
     action = arm_obj.animation_data.action
@@ -92,7 +103,15 @@ def save_xmot(context: bpy.types.Context, filepath: str, arm_obj: bpy.types.Obje
     # 3. Collect all bones in armature
     selected_pose_bones = context.selected_pose_bones
     for pose_bone in reversed(arm_obj.pose.bones):
+        # Filter by selection.
         if use_selection and pose_bone not in selected_pose_bones:
+            continue
+
+        # Filter by keyframes.
+        if with_keysframes and not any(True for bone_name, _ in frames_per_bone.keys() if bone_name == pose_bone.name):
+            continue
+
+        if filter_slots and pose_bone.name.startswith('Slot_') and pose_bone.name not in COMMONLY_USED_SLOTS:
             continue
 
         bone = pose_bone.bone
