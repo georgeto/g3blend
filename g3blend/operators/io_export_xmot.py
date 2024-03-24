@@ -81,7 +81,7 @@ def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
     old_scene_frame_current = context.scene.frame_current
     # TODO: Use scene.frame_start instead?
     # Have to jump to first frame of animation so that pose_bone.matrix_basis is set to value of the first frame.
-    context.scene.frame_current = 0
+    context.scene.frame_set(0)
 
     root_scale, root_matrix_no_scale = calc_arm_root_transformation(arm_obj.matrix_basis, global_scale,
                                                                     global_matrix, ignore_transform)
@@ -205,7 +205,7 @@ def save_xmot(context: bpy.types.Context, filepath: str, global_scale: float, gl
     # (see the different variants in `fbx_animations(scene_data):`)
 
     # Restore scene frame selection
-    context.scene.frame_current = old_scene_frame_current
+    context.scene.frame_set(old_scene_frame_current)
 
 
 def _extract_frame_effects(action: bpy.types.Action) -> dict[int, str]:
