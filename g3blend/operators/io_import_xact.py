@@ -22,11 +22,12 @@ class _ImportState:
     global_matrix: Matrix
     show_bone_names: bool
     show_bone_axes: bool
+    bone_connect: bool
     bake_transform: bool
 
 
 def load_xact(context: bpy.types.Context, filepath: Path, actor_name: str, global_scale: float, global_matrix: Matrix,
-              show_bone_names: bool, show_bone_axes: bool, bake_transform: bool):
+              show_bone_names: bool, show_bone_axes: bool, bone_connect: bool, bake_transform: bool):
     name = actor_name if actor_name else filepath.stem
     xact = read_genome_file(filepath, Xact)
 
@@ -37,7 +38,8 @@ def load_xact(context: bpy.types.Context, filepath: Path, actor_name: str, globa
     context.view_layer.objects.active = actor_obj
     actor_obj.select_set(True)
 
-    state = _ImportState(context, global_scale, global_matrix, show_bone_names, show_bone_axes, bake_transform)
+    state = _ImportState(context, global_scale, global_matrix, show_bone_names, show_bone_axes, bone_connect,
+                         bake_transform)
 
     armature_obj = _import_armature(name, xact, state)
     armature_obj.parent = actor_obj
@@ -206,7 +208,8 @@ def _import_armature_node(arm_data: bpy.types.Armature, parent_matrix: Matrix, p
         edit_bone.tail = bone_tail
         edit_bone.matrix = bone_matrix
         edit_bone.parent = parent_bone
-        if parent_bone is not None and similar_values_iter(edit_bone.head, parent_bone.tail, epsilon=1e-3):
+        if state.bone_connect and parent_bone is not None \
+                and similar_values_iter(edit_bone.head, parent_bone.tail, epsilon=1e-3):
             edit_bone.use_connect = True
     else:
         edit_bone = parent_bone

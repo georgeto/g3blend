@@ -51,6 +51,14 @@ class ImportXact(bpy.types.Operator, ImportHelper, AxisHelper):
         default=False,
     )
 
+    bone_connect: BoolProperty(
+        name='Connect Bones',
+        description='Normally, the armature bones are connected in such a way that no unnatural deformation can be '
+                    'introduced into the animation. However, occassionaly it might be desired to nevertheless create '
+                    'such an animation, in which case the option can be deactivated to obtain an unconnected armature',
+        default=True,
+    )
+
     def draw(self, context):
         pass
 
@@ -60,7 +68,7 @@ class ImportXact(bpy.types.Operator, ImportHelper, AxisHelper):
             if self.reset_scene:
                 reset_scene()
             load_xact(context, Path(self.filepath), self.actor_name, global_scale, global_matrix, self.show_bone_names,
-                      self.show_bone_axes, self.bake_transform)
+                      self.show_bone_axes, self.bone_connect, self.bake_transform)
             # Reset actor name override on successful import.
             self.actor_name = ''
         except Exception as e:
@@ -84,6 +92,7 @@ class G3BLEND_PT_import_xact_armature(AbstractFilePanel):
     bl_label = 'Armature'
 
     def _draw(self, context, layout: bpy.types.UILayout, operator: bpy.types.Operator):
+        layout.prop(operator, 'bone_connect'),
         col = layout.column(heading='Show')
         col.prop(operator, 'show_bone_names', text='Bone Names')
         col.prop(operator, 'show_bone_axes', text='Bone Axes'),
