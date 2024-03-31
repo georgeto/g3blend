@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
@@ -14,6 +15,16 @@ from ..util import bone_correction_matrix, bone_correction_matrix_inv, get_child
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class _ImportState:
+    context: bpy.types.Context
+    global_scale: float
+    global_matrix: Matrix
+    show_bone_names: bool
+    show_bone_axes: bool
+    bake_transform: bool
+
+
 def load_xact(context: bpy.types.Context, filepath: Path, actor_name: str, global_scale: float, global_matrix: Matrix,
               show_bone_names: bool, show_bone_axes: bool, bake_transform: bool):
     name = actor_name if actor_name else filepath.stem
@@ -26,17 +37,19 @@ def load_xact(context: bpy.types.Context, filepath: Path, actor_name: str, globa
     context.view_layer.objects.active = actor_obj
     actor_obj.select_set(True)
 
-    armature_obj = _import_armature(context, name, xact, global_matrix, show_bone_names, show_bone_axes, bake_transform)
+    state = _ImportState(context, global_scale, global_matrix, show_bone_names, show_bone_axes, bake_transform)
+
+    armature_obj = _import_armature(name, xact, state)
     armature_obj.parent = actor_obj
     # context.scene.collection.objects.link(armature_obj)
 
-    for mesh_obj in _import_meshes(name, xact.actor, armature_obj, global_matrix, bake_transform):
+    for mesh_obj in _import_meshes(name, xact.actor, armature_obj, state):
         mesh_obj.parent = actor_obj
         context.scene.collection.objects.link(mesh_obj)
 
 
-def _import_meshes(name: str, actor: eCWrapper_emfx2Actor, armature_obj: bpy.types.Object, global_matrix: Matrix,
-                   bake_transform: bool) -> list[bpy.types.Object]:
+def _import_meshes(name: str, actor: eCWrapper_emfx2Actor, armature_obj: bpy.types.Object, state: _ImportState) \
+        -> list[bpy.types.Object]:
     nodes = actor.get_chunks_by_type(NodeChunk)
     skinning = actor.get_chunk_by_type(SkinningInfoChunk)
 
@@ -44,26 +57,25 @@ def _import_meshes(name: str, actor: eCWrapper_emfx2Actor, armature_obj: bpy.typ
     mesh_chunk = actor.get_chunk_by_type(MeshChunk)
     for submesh in mesh_chunk.submeshes:
         mesh_name = f'{name}_p{mesh_chunk.submeshes.index(submesh)}'
-        mesh = _import_mesh(mesh_name, submesh, global_matrix, bake_transform)
+        mesh = _import_mesh(mesh_name, submesh, state)
         if mesh is None:
             continue
         mesh_obj = bpy.data.objects.new(mesh_name, mesh)
         # TODO: Optionally bake transform of global matrix instead?
-        if not bake_transform:
-            mesh_obj.matrix_basis = global_matrix
+        if not state.bake_transform:
+            mesh_obj.matrix_basis = state.global_matrix
         _import_skinning(submesh, nodes, skinning, mesh_obj, armature_obj)
         meshes.append(mesh_obj)
     return meshes
 
 
-def _import_mesh(mesh_name: str, submesh: Submesh, global_matrix: Matrix,
-                 bake_transform: bool) -> bpy.types.Mesh | None:
+def _import_mesh(mesh_name: str, submesh: Submesh, state: _ImportState) -> bpy.types.Mesh | None:
     mesh = bpy.data.meshes.new(mesh_name)
 
     # Vertices and faces
     vertices = [to_blend_vec_tuple(v.position) for v in submesh.vertices]
-    if bake_transform:
-        vertices = [to_blend_vec_tuple_transform(v.position, global_matrix) for v in submesh.vertices]
+    if state.bake_transform:
+        vertices = [to_blend_vec_tuple_transform(v.position, state.global_matrix) for v in submesh.vertices]
     assert len(submesh.indices) % 3 == 0
     faces = list(zip(*([iter(submesh.indices)] * 3), strict=True))
     mesh.from_pydata(vertices, [], faces)
@@ -98,32 +110,31 @@ def _import_skinning(submesh: Submesh, nodes: list[NodeChunk], skinning: Skinnin
             vg.add((vertex_index,), influence.weight, 'REPLACE')
 
 
-def _import_armature(context: bpy.types.Context, name: str, xact: Xact, global_matrix: Matrix,
-                     show_bone_names: bool, show_bone_axes: bool, bake_transform: bool) -> bpy.types.Object:
+def _import_armature(name: str, xact: Xact, state: _ImportState) -> bpy.types.Object:
     arm_data = bpy.data.armatures.new(name=f'{name}_armature')
-    arm_data.show_names = show_bone_names
-    arm_data.show_axes = show_bone_axes
+    arm_data.show_names = state.show_bone_names
+    arm_data.show_axes = state.show_bone_axes
     arm = bpy.data.objects.new(name=f'{name}_armature', object_data=arm_data)
     arm.show_in_front = True
 
     # Apply global matrix as armature basis
-    if not bake_transform:
-        arm.matrix_basis = global_matrix
+    if not state.bake_transform:
+        arm.matrix_basis = state.global_matrix
 
-    context.scene.collection.objects.link(arm)
+    state.context.scene.collection.objects.link(arm)
     arm.select_set(True)
     arm.hide_viewport = False
 
     # Enter Edit mode
-    context.view_layer.objects.active = arm
+    state.context.view_layer.objects.active = arm
     bpy.ops.object.mode_set(mode='EDIT')
 
     # Import root nodes and their children recursively.
     nodes = xact.actor.get_chunks_by_type(NodeChunk)
-    arm_base_matrix = global_matrix if bake_transform else Matrix()
+    arm_base_matrix = state.global_matrix if state.bake_transform else Matrix()
     for node in nodes:
         if not node.parent:
-            _import_armature_node(arm_data, arm_base_matrix, Matrix(), None, node, nodes)
+            _import_armature_node(arm_data, arm_base_matrix, Matrix(), None, node, nodes, state)
 
     # Exit Edit mode
     bpy.ops.object.mode_set(mode='OBJECT')
@@ -156,7 +167,8 @@ def _is_obsolete_joint(node: NodeChunk):
 
 
 def _import_armature_node(arm_data: bpy.types.Armature, parent_matrix: Matrix, parent_correction_matrix_inv: Matrix,
-                          parent_bone: Optional[bpy.types.EditBone], node: NodeChunk, nodes: list[NodeChunk]):
+                          parent_bone: Optional[bpy.types.EditBone], node: NodeChunk, nodes: list[NodeChunk],
+                          state: _ImportState):
     # TODO: Scale...
     # Oh, the problem is that scale is all zeroes, but what is about scale_orient :/
     local_matrix = Matrix.LocRotScale(to_blend_vec(node.position), to_blend_quat(node.rotation), None)
@@ -200,6 +212,6 @@ def _import_armature_node(arm_data: bpy.types.Armature, parent_matrix: Matrix, p
         edit_bone = parent_bone
 
     for child in children:
-        _import_armature_node(arm_data, bone_matrix, bone_correction_matrix_inv, edit_bone, child, nodes)
+        _import_armature_node(arm_data, bone_matrix, bone_correction_matrix_inv, edit_bone, child, nodes, state)
 
 # TODO: Attach stuff (slots?) to bone, see link_skeleton_children()...
