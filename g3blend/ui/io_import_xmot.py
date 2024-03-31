@@ -25,7 +25,7 @@ class ImportXmot(bpy.types.Operator, ImportHelper, AxisHelper):
     )
 
     ignore_transform: BoolProperty(
-        name='Ignore transform',
+        name='Ignore Transform',
         description='Ignore transform set on the armature object',
         default=False,
     )
@@ -39,7 +39,7 @@ class ImportXmot(bpy.types.Operator, ImportHelper, AxisHelper):
         return self.target_armature_index
 
     target_armature: EnumProperty(
-        name='Target armature',
+        name='Target Armature',
         description='Armature for which the animation shall be imported',
         items=get_target_armature_list_items,
         set=_set_target_armature,

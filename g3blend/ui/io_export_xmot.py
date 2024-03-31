@@ -67,7 +67,7 @@ class ExportXmot(bpy.types.Operator, ExportHelper, AxisHelper):
     )
 
     ignore_transform: BoolProperty(
-        name='Ignore transform',
+        name='Ignore Transform',
         description='Ignore transform set on the armature object',
         default=False,
     )

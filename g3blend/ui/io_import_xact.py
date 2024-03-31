@@ -22,31 +22,31 @@ class ImportXact(bpy.types.Operator, ImportHelper, AxisHelper):
     filter_glob: StringProperty(default='*.xact', options={'HIDDEN'})
 
     reset_scene: BoolProperty(
-        name='Reset scene',
+        name='Reset Scene',
         description='Remove everything from scene before import',
         default=False,
     )
 
     actor_name: StringProperty(
-        name='Actor name',
+        name='Actor Name',
         description='By default derived from xact file name, can be overwritten, for example to import an actor twice',
     )
 
     bake_transform: BoolProperty(
-        name='Bake transform',
+        name='Bake Transform',
         description="Bake space transform into object data, avoids getting unwanted rotations and "
                     "scale to objects because Gothic 3 space is not aligned with Blender's space",
         default=True,
     )
 
     show_bone_names: BoolProperty(
-        name='Display bone names',
+        name='Display Bone Names',
         description='Show bone names, can later be changed in armature properties',
         default=False,
     )
 
     show_bone_axes: BoolProperty(
-        name='Display bone axes',
+        name='Display Bone Axes',
         description='Show bone axes, can later be changed in armature properties',
         default=False,
     )
@@ -85,8 +85,8 @@ class G3BLEND_PT_import_xact_armature(AbstractFilePanel):
 
     def _draw(self, context, layout: bpy.types.UILayout, operator: bpy.types.Operator):
         col = layout.column(heading='Show')
-        col.prop(operator, 'show_bone_names', text='Bone names')
-        col.prop(operator, 'show_bone_axes', text='Bone axes'),
+        col.prop(operator, 'show_bone_names', text='Bone Names')
+        col.prop(operator, 'show_bone_axes', text='Bone Axes'),
 
 
 class G3BLEND_PT_import_xact_misc(AbstractFilePanel):
