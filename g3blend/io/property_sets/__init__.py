@@ -5,6 +5,7 @@ from .property_desc import PropertyDescriptor
 from .property_set import PropertySet
 from .registry import PropertySetRegistry
 from .resource_base import eCResourceBase_PS
+from .resource_mesh_complex import eCResourceMeshComplex_PS
 from .resource_shader_material import eCResourceShaderMaterial_PS
 from .shader import *
 from .shader_base import eCShaderBase

@@ -119,6 +119,9 @@ class BinaryReader:
     def read_vec3(self) -> 'bCVector':
         return bCVector(*self._unpack('<fff', 12))
 
+    def read_vec4(self) -> 'bCVector4':
+        return bCVector4(*self._unpack('<ffff', 16))
+
     def read_quat(self) -> 'bCQuaternion':
         return bCQuaternion(*self._unpack('<ffff', 16))
 
@@ -278,6 +281,9 @@ class BinaryWriter:
     def write_vec3(self, val: 'bCVector') -> None:
         return self._pack('<fff', 12, val.x, val.y, val.z)
 
+    def write_vec4(self, val: 'bCVector4') -> None:
+        return self._pack('<ffff', 16, val.x, val.y, val.z, val.w)
+
     def write_quat(self, val: 'bCQuaternion') -> None:
         return self._pack('<ffff', 16, val.x, val.y, val.z, val.w)
 
@@ -348,4 +354,4 @@ class BinaryWriter:
 
 
 from .property_types import bCVector, bCVector2
-from .types import bCQuaternion
+from .types import bCQuaternion, bCVector4

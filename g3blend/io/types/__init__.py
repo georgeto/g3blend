@@ -5,3 +5,4 @@ from .point import bCPoint
 from .quaternion import bCQuaternion
 from .rect import bCRect
 from .tex_coord_src_proxy import eCTexCoordSrcProxy
+from .vector4 import bCVector4
