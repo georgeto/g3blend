@@ -15,8 +15,9 @@ from .io.types.quaternion import bCQuaternion
 T = TypeVar('T')
 
 
-def read_genome_file(file: Path, content_type: Type[TBinarySerializable]) -> TBinarySerializable:
-    return genome_file.read(BinaryReader(Path(file)), content_type)
+def read_genome_file(file: Path, content_type: Type[TBinarySerializable],
+                     allow_fallback: bool = False) -> TBinarySerializable:
+    return genome_file.read(BinaryReader(Path(file)), content_type, allow_fallback)
 
 
 def write_genome_file(file: Path, content: TBinarySerializable) -> None:

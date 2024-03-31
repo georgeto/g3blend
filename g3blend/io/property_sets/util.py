@@ -10,8 +10,10 @@ def read_property_set(reader: BinaryReader) -> TPropertySet:
     if not reader.expect_bytes(_SUB_CLASS_IDENTIFIER):
         raise ValueError('Not a valid sub class identifier.')
     name = reader.read_entry()
-    if not reader.expect_bytes(_TYPE_TO_VERSION_FILLER):
-        raise ValueError('Not a valid type to version filler.')
+    # differs, especially in not Genomfile templates/materials/meshes
+    reader.skip(len(_TYPE_TO_VERSION_FILLER))
+    # if not reader.expect_bytes(_TYPE_TO_VERSION_FILLER):
+    #    raise ValueError('Not a valid type to version filler.')
     property_set = PropertySetRegistry.instantiate(name)
     property_set.name = name
     property_set.read(reader)

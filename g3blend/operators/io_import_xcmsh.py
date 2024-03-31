@@ -28,7 +28,7 @@ class _ImportState:
 def load_xcmsh(context: bpy.types.Context, filepath: Path, mesh_name: str, global_scale: float, global_matrix: Matrix,
                bake_transform: bool):
     name = mesh_name if mesh_name else filepath.stem
-    mesh_complex = read_genome_file(filepath, eCResourceMeshComplex_PS)
+    mesh_complex = read_genome_file(filepath, eCResourceMeshComplex_PS, allow_fallback=True)
 
     # Create and select object for actor
     # TODO: With this approach meshes are not deleted properly (on reimport they get .001 prefix)

@@ -157,7 +157,8 @@ class BinaryReader:
 
     def read_entry(self) -> str:
         if self._stringtable is None:
-            raise ValueError('Attempted to read entry from reader without stringtable.')
+            return self.read_str_u16()
+            # raise ValueError('Attempted to read entry from reader without stringtable.')
 
         return self._stringtable[self.read_u16()]
 

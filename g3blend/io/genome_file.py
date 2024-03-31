@@ -9,9 +9,23 @@ _DEADBEEF = b'\xEF\xBE\xAD\xDE'
 _VERSION = 1
 
 
-def read(reader: BinaryReader, content_type: Type[TBinarySerializable]) -> TBinarySerializable:
+def _read_content(reader: BinaryReader, content_type: Type[TBinarySerializable]) -> TBinarySerializable:
+    if issubclass(content_type, PropertySet):
+        property_set = read_property_set(reader)
+        if not isinstance(property_set, content_type):
+            raise ValueError(f'Expected property set {content_type}, got {type(property_set)}.')
+        return property_set
+    else:
+        return reader.read(content_type)
+
+
+def read(reader: BinaryReader, content_type: Type[TBinarySerializable],
+         allow_fallback: bool = False) -> TBinarySerializable:
     if not reader.expect_bytes(_GENOME_MAGIC):
-        raise ValueError('Not a valid Genome file.')
+        if allow_fallback:
+            return _read_content(reader, content_type)
+        else:
+            raise ValueError('Not a valid Genome file.')
 
     if (version := reader.read_u16()) != _VERSION:
         raise ValueError(f'Unsupported Genome file version: {version}')
@@ -24,13 +38,7 @@ def read(reader: BinaryReader, content_type: Type[TBinarySerializable]) -> TBina
 
         reader.read_stringtable()
 
-    if issubclass(content_type, PropertySet):
-        property_set = read_property_set(reader)
-        if not isinstance(property_set, content_type):
-            raise ValueError(f'Expected property set {content_type}, got {type(property_set)}.')
-        return property_set
-    else:
-        return reader.read(content_type)
+    return _read_content(reader, content_type)
 
 
 def write(writer: BinaryWriter, content: TBinarySerializable) -> None:
