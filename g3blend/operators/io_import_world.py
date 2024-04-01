@@ -26,7 +26,8 @@ class _ImportState:
 
 
 def _find_file(base_dir: Path, name: str) -> Optional[Path]:
-    for file in base_dir.glob('**/*'):
+    # TODO: Passing user-provided name to path might be insecure...
+    for file in base_dir.glob('**/' + name):
         if file.is_file() and file.name == name:
             return file
     return None
@@ -43,6 +44,9 @@ def load_world(context: bpy.types.Context, filepath: Path, data_dir: Path, globa
         entities_list = json.load(f)
 
     scene_col = context.scene.collection
+    # Checking whether a name is in context.scene.objects is really slow (iterates through all entries each time),
+    # therefore we manage a set of known entities (object names) to speedup the process.
+    known_entities = {obj.name for obj in context.scene.objects}
     failed_meshes = set()
     mapped_meshes = {}
 
@@ -70,7 +74,7 @@ def load_world(context: bpy.types.Context, filepath: Path, data_dir: Path, globa
             continue
 
         # Already imported.
-        if entity_name in context.scene.objects:
+        if entity_name in known_entities:
             continue
 
         filter_location = _parse_vec3(entity['Position'])
@@ -146,6 +150,7 @@ def load_world(context: bpy.types.Context, filepath: Path, data_dir: Path, globa
         instance_obj.matrix_basis = global_matrix_no_scale @ Matrix.LocRotScale(location, rotation,
                                                                                 scaling) @ global_matrix_no_scale_inv
         scene_col.objects.link(instance_obj)
+        known_entities.add(entity_name)
 
     if failed_meshes:
         logger.warning('Failed to load the following meshes:')
