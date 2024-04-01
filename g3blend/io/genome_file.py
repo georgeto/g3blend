@@ -1,6 +1,8 @@
 from typing import Type
 
 from .binary import BinaryReader, BinaryWriter, TBinarySerializable
+from .property_sets.property_set import PropertySet
+from .property_sets.util import read_property_set, write_property_set
 
 _GENOME_MAGIC = b'\x47\x45\x4E\x4F\x4D\x46\x4C\x45'
 _DEADBEEF = b'\xEF\xBE\xAD\xDE'
@@ -22,9 +24,13 @@ def read(reader: BinaryReader, content_type: Type[TBinarySerializable]) -> TBina
 
         reader.read_stringtable()
 
-    content = content_type()
-    content.read(reader)
-    return content
+    if issubclass(content_type, PropertySet):
+        property_set = read_property_set(reader)
+        if not isinstance(property_set, content_type):
+            raise ValueError(f'Expected property set {content_type}, got {type(property_set)}.')
+        return property_set
+    else:
+        return reader.read(content_type)
 
 
 def write(writer: BinaryWriter, content: TBinarySerializable) -> None:
@@ -34,7 +40,10 @@ def write(writer: BinaryWriter, content: TBinarySerializable) -> None:
     size_fixup_pos = writer.position()
     writer.write_u32(0)
 
-    content.write(writer)
+    if isinstance(content, PropertySet):
+        write_property_set(writer, content)
+    else:
+        writer.write(content)
 
     deadbeef_offset = writer.position()
     writer.write_bytes(_DEADBEEF)
