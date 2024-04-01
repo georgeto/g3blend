@@ -78,10 +78,11 @@ def _import_mesh(mesh_name: str, mesh_elem: eCMeshElement, state: _ImportState) 
     # TODO: Normals?
 
     # Texture coordinates
+
     tex_coords_arr: list[bCVector2] = mesh_elem.get_stream_array_by_type(eEVertexStreamArrayType.TextureCoordinate)
     if tex_coords_arr:
         uv_layer = mesh.uv_layers.new(name='uv', do_init=False)
-        for i, tex_coord in enumerate(tex_coords_arr):
-            uv_layer.uv[i].vector = to_blend_vec2_tuple(tex_coord)
+        for i, vert_index in enumerate(indices_arr):
+            uv_layer.uv[i].vector = to_blend_vec2_tuple(tex_coords_arr[vert_index])
 
     return mesh

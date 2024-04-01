@@ -53,6 +53,7 @@ def load_xact(context: bpy.types.Context, filepath: Path, actor_name: str, globa
 def _import_meshes(name: str, actor: eCWrapper_emfx2Actor, armature_obj: bpy.types.Object, state: _ImportState) \
         -> list[bpy.types.Object]:
     nodes = actor.get_chunks_by_type(NodeChunk)
+    # TODO: G3_Orc_Skeleton.xact contains no skinning info chunk...
     skinning = actor.get_chunk_by_type(SkinningInfoChunk)
 
     meshes = []
