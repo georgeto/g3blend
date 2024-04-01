@@ -11,7 +11,7 @@ from .io_import_xcmsh import load_xcmsh
 from .. import log as logging
 from ..io.property_types import bCVector
 from ..io.types import bCQuaternion
-from ..util import to_blend_quat, to_blend_vec
+from ..util import to_blend_quat, to_blend_vec, without_scale
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +43,9 @@ def load_world(context: bpy.types.Context, filepath: Path, data_dir: Path, globa
 
     scene_col = context.scene.collection
     failed_meshes = set()
+
+    global_matrix_no_scale = without_scale(global_matrix)
+    global_matrix_no_scale_inv = global_matrix_no_scale.inverted_safe()
 
     for entity in entities_list['Entities']:
         # Filter lowpoly entities...
@@ -125,9 +128,9 @@ def load_world(context: bpy.types.Context, filepath: Path, data_dir: Path, globa
         else:
             mesh_col = scene_col.children[mesh_name]
 
-        location = global_matrix @ _parse_vec3(entity['Position'])
-        rotation = (global_matrix @ to_blend_quat(
-            bCQuaternion(*entity['RotationQ'])).to_matrix().to_4x4()).to_quaternion()
+        # TODO: Not sure if this is correct and whether we should forward global_matrix/scale into the mesh loading.
+        location = _parse_vec3(entity['Position']) * global_scale
+        rotation = to_blend_quat(bCQuaternion(*entity['RotationQ']))
         scaling = _parse_vec3(entity['Scaling'])
 
         instance_obj = bpy.data.objects.new(
@@ -136,7 +139,8 @@ def load_world(context: bpy.types.Context, filepath: Path, data_dir: Path, globa
         )
         instance_obj.instance_collection = mesh_col
         instance_obj.instance_type = 'COLLECTION'
-        instance_obj.matrix_basis = Matrix.LocRotScale(location, rotation, scaling)
+        instance_obj.matrix_basis = global_matrix_no_scale @ Matrix.LocRotScale(location, rotation,
+                                                                                scaling) @ global_matrix_no_scale_inv
         scene_col.objects.link(instance_obj)
 
     if failed_meshes:
