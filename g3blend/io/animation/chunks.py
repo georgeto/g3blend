@@ -4,8 +4,8 @@ from enum import Enum, IntEnum
 from typing import Generic, Type, TypeVar
 
 from ..binary import BinaryReader, BinarySerializable, BinaryWriter
-from ..types.math import bCQuaternion, bCVector, bCVector2
-from ..types.misc import FloatColor
+from ..property_types import bCVector, bCVector2
+from ..types import FloatColor, bCQuaternion
 
 
 class LMA_CHUNK(IntEnum):
@@ -90,7 +90,7 @@ class AbstractChunk(Chunk, ABC):
 class UnknownChunk(AbstractChunk):
     chunk_data: bytes
 
-    def read(self, reader: 'BinaryReader') -> None:
+    def read(self, reader: BinaryReader) -> None:
         raise NotImplementedError("No size provided.")
 
     def read_sized(self, reader: BinaryReader, size: int = None) -> None:
@@ -137,7 +137,7 @@ class Vertex(BinarySerializable):
     normal: bCVector  # Z, Y, X
     uv_sets: list[bCVector2]
 
-    def read(self, reader: 'BinaryReader') -> None:
+    def read(self, reader: BinaryReader) -> None:
         raise NotImplementedError("No size provided.")
 
     def read_sized(self, reader: BinaryReader, size: int) -> None:
@@ -166,7 +166,7 @@ class Submesh(BinarySerializable):
     vertices: list[Vertex]
     indices: list[int]
 
-    def read(self, reader: 'BinaryReader') -> None:
+    def read(self, reader: BinaryReader) -> None:
         raise NotImplementedError("No size provided.")
 
     def read_sized(self, reader: BinaryReader, override_num_uv_sets: int) -> None:
@@ -255,7 +255,7 @@ class SkinningInfoChunk(AbstractChunk):
     node_index: int
     influences: list[list[SkinInfluence]]
 
-    def read(self, reader: 'BinaryReader') -> None:
+    def read(self, reader: BinaryReader) -> None:
         raise NotImplementedError("No size provided.")
 
     def read_sized(self, reader: BinaryReader, size: int) -> None:

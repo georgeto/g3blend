@@ -1,27 +1,13 @@
 from dataclasses import dataclass
 
+from .decorator import property_type
 from ..binary import BinaryReader, BinarySerializable, BinaryWriter
 
 
-class FloatColor(BinarySerializable):
-    red: float
-    green: float
-    blue: float
-
-    def read(self, reader: BinaryReader) -> None:
-        self.red = reader.read_float()
-        self.green = reader.read_float()
-        self.blue = reader.read_float()
-
-    def write(self, writer: BinaryWriter) -> None:
-        writer.write_float(self.red)
-        writer.write_float(self.green)
-        writer.write_float(self.blue)
-
-
+@property_type
 @dataclass(slots=True)
 class bCDateTime(BinarySerializable):
-    file_time: int = None
+    file_time: int
 
     def read(self, reader: BinaryReader) -> None:
         self.file_time = reader.read_u64()

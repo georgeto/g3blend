@@ -10,7 +10,7 @@ from ..io.animation.chunks import AnimationType, InterpolationType, KeyFrameChun
     QuaternionKeyFrame, \
     VectorKeyFrame
 from ..io.animation.xmot import ResourceAnimationMotion as Xmot, eCWrapper_emfx2Motion, eSFrameEffect
-from ..io.types.misc import bCDateTime
+from ..io.property_types import bCDateTime
 from ..util import _from_blend_quat, _from_blend_vec, bone_correction_matrix_inv, calc_arm_root_transformation, \
     write_genome_file
 

@@ -8,7 +8,9 @@ from mathutils import Matrix, Quaternion, Vector
 
 from .io import genome_file
 from .io.binary import BinaryReader, BinaryWriter, TBinarySerializable
-from .io.types.math import bCQuaternion, bCVector, bCVector2
+from .io.property_types.vector import bCVector
+from .io.property_types.vector2 import bCVector2
+from .io.types.quaternion import bCQuaternion
 
 T = TypeVar('T')
 

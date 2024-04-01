@@ -1,7 +1,6 @@
 from .chunks import ChunkContainer
 from ..binary import BinaryReader, BinarySerializable, BinaryWriter
-from ..types.math import bCBox, bCVector
-from ..types.misc import bCDateTime
+from ..property_types import bCBox, bCDateTime, bCVector
 
 
 class MaterialReference(BinarySerializable):

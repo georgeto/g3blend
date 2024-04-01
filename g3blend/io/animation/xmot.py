@@ -2,13 +2,13 @@ from dataclasses import dataclass
 
 from ..animation.chunks import ChunkContainer
 from ..binary import BinaryReader, BinarySerializable, BinaryWriter
-from ..types.misc import bCDateTime
+from ..property_types import bCDateTime
 
 
 @dataclass(slots=True)
 class eSFrameEffect(BinarySerializable):
-    key_frame: int = None
-    effect_name: str = None
+    key_frame: int
+    effect_name: str
 
     def read(self, reader: BinaryReader) -> None:
         self.key_frame = reader.read_u16()

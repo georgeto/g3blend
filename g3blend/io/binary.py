@@ -1,17 +1,27 @@
 import struct
+from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Callable, Iterable, Optional, Type, TypeVar
 
-from . import binary_serialize
-from .types.math import bCQuaternion, bCVector, bCVector2
 
-_ENCODING = 'windows-1252'
+class BinarySerializable(ABC):
+    @abstractmethod
+    def read(self, reader: 'BinaryReader') -> None:
+        pass
 
-BinarySerializable = binary_serialize.BinarySerializable
+    def read_sized(self, reader: 'BinaryReader', size: int) -> None:
+        self.read(reader)
+
+    @abstractmethod
+    def write(self, writer: 'BinaryWriter') -> None:
+        pass
+
 
 TBinarySerializable = TypeVar("TBinarySerializable", bound=BinarySerializable)
+
 T = TypeVar('T')
+_ENCODING = 'windows-1252'
 
 
 class BinaryReader:
@@ -103,17 +113,20 @@ class BinaryReader:
     def read_str_u32(self) -> str:
         return self.read_str(self.read_u32())
 
-    def read_vec2(self) -> bCVector2:
+    def read_vec2(self) -> 'bCVector2':
         return bCVector2(*self._unpack('<ff', 8))
 
-    def read_vec3(self) -> bCVector:
+    def read_vec3(self) -> 'bCVector':
         return bCVector(*self._unpack('<fff', 12))
 
-    def read_quat(self) -> bCQuaternion:
+    def read_quat(self) -> 'bCQuaternion':
         return bCQuaternion(*self._unpack('<ffff', 16))
 
+    def read_guid(self) -> bytes:
+        return self.read_bytes(20)
+
     def read(self, class_type: Type[TBinarySerializable], size: int = None) -> TBinarySerializable:
-        value = class_type()
+        value = class_type.__new__(class_type)
         if size is not None:
             value.read_sized(self, size)
         else:
@@ -259,13 +272,13 @@ class BinaryWriter:
         self.write_u32(len(val_bytes))
         self.write_bytes(val_bytes)
 
-    def write_vec2(self, val: bCVector2) -> None:
+    def write_vec2(self, val: 'bCVector2') -> None:
         return self._pack('<ff', 8, val.x, val.y)
 
-    def write_vec3(self, val: bCVector) -> None:
+    def write_vec3(self, val: 'bCVector') -> None:
         return self._pack('<fff', 12, val.x, val.y, val.z)
 
-    def write_quat(self, val: bCQuaternion) -> None:
+    def write_quat(self, val: 'bCQuaternion') -> None:
         return self._pack('<ffff', 16, val.x, val.y, val.z, val.w)
 
     def write(self, value: TBinarySerializable) -> None:
@@ -332,3 +345,7 @@ class BinaryWriter:
 
     def __repr__(self) -> str:
         return str(self)
+
+
+from .property_types import bCVector, bCVector2
+from .types import bCQuaternion

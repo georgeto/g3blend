@@ -1,6 +1,6 @@
 from .. import log as logging
 from ..io.animation.xact import ResourceAnimationActor as Xact
-from ..io.types.misc import bCDateTime
+from ..io.property_types.date_time import bCDateTime
 
 logger = logging.getLogger(__name__)
 
