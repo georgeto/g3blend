@@ -58,6 +58,8 @@ def load_world(context: bpy.types.Context, filepath: Path, data_dir: Path, globa
         if 'LOWPOLY' in entity['Name']:
             continue
 
+        # TODO: Include NPCs as owner of body parts?
+        # TODO: Attachable body parts (beard for example)
         if 'Mesh' not in entity:
             # Skip entities without mesh.
             continue
