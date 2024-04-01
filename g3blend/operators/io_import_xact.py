@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class _ImportState:
     context: bpy.types.Context
+    collection: bpy.types.Collection
     global_scale: float
     global_matrix: Matrix
     show_bone_names: bool
@@ -27,27 +28,31 @@ class _ImportState:
 
 
 def load_xact(context: bpy.types.Context, filepath: Path, actor_name: str, global_scale: float, global_matrix: Matrix,
-              show_bone_names: bool, show_bone_axes: bool, bone_connect: bool, bake_transform: bool):
+              show_bone_names: bool, show_bone_axes: bool, bone_connect: bool, bake_transform: bool,
+              collection: Optional[bpy.types.Collection] = None):
+    if collection is None:
+        collection = context.scene.collection
+
     name = actor_name if actor_name else filepath.stem
     xact = read_genome_file(filepath, Xact)
 
     # Create and select object for actor
     # TODO: With this approach meshes are not deleted properly (on reimport they get .001 prefix)
     actor_obj = bpy.data.objects.new(name, None)
-    context.scene.collection.objects.link(actor_obj)
+    collection.objects.link(actor_obj)
     context.view_layer.objects.active = actor_obj
     actor_obj.select_set(True)
 
-    state = _ImportState(context, global_scale, global_matrix, show_bone_names, show_bone_axes, bone_connect,
-                         bake_transform)
+    state = _ImportState(context, collection, global_scale, global_matrix, show_bone_names, show_bone_axes,
+                         bone_connect, bake_transform)
 
     armature_obj = _import_armature(name, xact, state)
     armature_obj.parent = actor_obj
-    # context.scene.collection.objects.link(armature_obj)
+    # collection.objects.link(armature_obj)
 
     for mesh_obj in _import_meshes(name, xact.actor, armature_obj, state):
         mesh_obj.parent = actor_obj
-        context.scene.collection.objects.link(mesh_obj)
+        collection.objects.link(mesh_obj)
 
 
 def _import_meshes(name: str, actor: eCWrapper_emfx2Actor, armature_obj: bpy.types.Object, state: _ImportState) \
@@ -125,7 +130,7 @@ def _import_armature(name: str, xact: Xact, state: _ImportState) -> bpy.types.Ob
     if not state.bake_transform:
         arm.matrix_basis = state.global_matrix
 
-    state.context.scene.collection.objects.link(arm)
+    state.collection.objects.link(arm)
     arm.select_set(True)
     arm.hide_viewport = False
 

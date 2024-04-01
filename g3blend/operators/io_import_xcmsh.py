@@ -26,14 +26,17 @@ class _ImportState:
 
 
 def load_xcmsh(context: bpy.types.Context, filepath: Path, mesh_name: str, global_scale: float, global_matrix: Matrix,
-               bake_transform: bool):
+               bake_transform: bool, collection: Optional[bpy.types.Collection] = None):
+    if collection is None:
+        collection = context.scene.collection
+
     name = mesh_name if mesh_name else filepath.stem
     mesh_complex = read_genome_file(filepath, eCResourceMeshComplex_PS, allow_fallback=True)
 
     # Create and select object for actor
     # TODO: With this approach meshes are not deleted properly (on reimport they get .001 prefix)
     mesh_obj = bpy.data.objects.new(name, None)
-    context.scene.collection.objects.link(mesh_obj)
+    collection.objects.link(mesh_obj)
     context.view_layer.objects.active = mesh_obj
     mesh_obj.select_set(True)
 
@@ -48,7 +51,7 @@ def load_xcmsh(context: bpy.types.Context, filepath: Path, mesh_name: str, globa
         if not state.bake_transform:
             mesh_elem_obj.matrix_basis = state.global_matrix
         mesh_elem_obj.parent = mesh_obj
-        context.scene.collection.objects.link(mesh_elem_obj)
+        collection.objects.link(mesh_elem_obj)
 
 
 def _import_mesh(mesh_name: str, mesh_elem: eCMeshElement, state: _ImportState) -> Optional[bpy.types.Mesh]:
@@ -70,7 +73,7 @@ def _import_mesh(mesh_name: str, mesh_elem: eCMeshElement, state: _ImportState) 
         raise ValueError(f"Invalid mesh '{mesh_name}': Number of face indices not a multiple of 3.")
 
     faces = list(zip(*([iter(indices_arr)] * 3), strict=True))
-    mesh.from_pydata(vertices, [], faces)
+    mesh.from_pydata(vertices, [], faces, shade_flat=False)
     if mesh.validate(verbose=True):
         # Avoid crash
         raise ValueError(f"Invalid mesh '{mesh_name}': Validation failed (see log for details).")
