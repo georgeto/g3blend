@@ -75,9 +75,10 @@ def _import_mesh(mesh_name: str, submesh: Submesh, state: _ImportState) -> bpy.t
     mesh = bpy.data.meshes.new(mesh_name)
 
     # Vertices and faces
-    vertices = [to_blend_vec_tuple(v.position) for v in submesh.vertices]
     if state.bake_transform:
         vertices = [to_blend_vec_tuple_transform(v.position, state.global_matrix) for v in submesh.vertices]
+    else:
+        vertices = [to_blend_vec_tuple(v.position) for v in submesh.vertices]
     assert len(submesh.indices) % 3 == 0
     faces = list(zip(*([iter(submesh.indices)] * 3), strict=True))
     mesh.from_pydata(vertices, [], faces)
