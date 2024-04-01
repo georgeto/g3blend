@@ -86,6 +86,9 @@ def load_world(context: bpy.types.Context, filepath: Path, data_dir: Path, globa
             mesh_name = mapped_meshes[mesh_name]
 
         if mesh_name not in scene_col.children:
+            mesh_col = bpy.data.collections.new(mesh_name)
+            scene_col.children.link(mesh_col)
+
             try:
                 # Lookup first mesh in LoD mesh.
                 if mesh_name.endswith('.xlmsh'):
@@ -102,7 +105,7 @@ def load_world(context: bpy.types.Context, filepath: Path, data_dir: Path, globa
                     if not mesh_file:
                         logger.warning('Failed to find mesh file: {}', mesh_name)
                         continue
-                    load_xcmsh(context, mesh_file, mesh_name, global_scale, global_matrix, bake_transform)
+                    load_xcmsh(context, mesh_file, mesh_name, global_scale, global_matrix, bake_transform, mesh_col)
                     # TODO: Move into mesh collection
                 elif mesh_name.endswith('.xact'):
                     mesh_file = _find_file(data_dir / '_compiledAnimation', mesh_name)
@@ -110,30 +113,17 @@ def load_world(context: bpy.types.Context, filepath: Path, data_dir: Path, globa
                         logger.warning('Failed to find mesh file: {}', mesh_name)
                         continue
                     load_xact(context, mesh_file, mesh_name, global_scale, global_matrix, False, False, True,
-                              bake_transform)
+                              bake_transform, mesh_col)
                     # TODO: Move into actor collection
                 else:
                     logger.warning('Encountered unsupported mesh type: {}', mesh_name)
                     continue
-            except Exception:
+            except Exception as e:
                 failed_meshes.add(mesh_name)
                 # Remove incompletely imported mesh
-                if mesh_name in context.scene.objects:
-                    mesh_obj = context.scene.objects[mesh_name]
-                    for child in mesh_obj.children:
-                        scene_col.objects.unlink(child)
-                    scene_col.objects.unlink(mesh_obj)
+                bpy.data.collections.remove(mesh_col)
                 continue
 
-            mesh_obj = context.scene.objects[mesh_name]
-            mesh_col = bpy.data.collections.new(mesh_name)
-            # Add to wrapper collection and remove from scene collection.
-            mesh_col.objects.link(mesh_obj)
-            scene_col.objects.unlink(mesh_obj)
-            for child in mesh_obj.children:
-                mesh_col.objects.link(child)
-                scene_col.objects.unlink(child)
-            scene_col.children.link(mesh_col)
             # Hide from viewport and render of active view layer (cannot set directly on Collection as
             # then also the instance collections are hidden)
             mesh_layer_col = context.view_layer.layer_collection.children[mesh_col.name]
