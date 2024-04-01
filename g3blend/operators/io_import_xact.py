@@ -81,7 +81,7 @@ def _import_mesh(mesh_name: str, submesh: Submesh, state: _ImportState) -> bpy.t
         vertices = [to_blend_vec_tuple(v.position) for v in submesh.vertices]
     assert len(submesh.indices) % 3 == 0
     faces = list(zip(*([iter(submesh.indices)] * 3), strict=True))
-    mesh.from_pydata(vertices, [], faces)
+    mesh.from_pydata(vertices, [], faces, shade_flat=False)
     if mesh.validate(verbose=True):
         # Avoid crash
         logger.error("INVALID MESH {}", mesh_name)
