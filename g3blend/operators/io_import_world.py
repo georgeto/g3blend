@@ -9,9 +9,10 @@ from mathutils import Matrix, Vector
 from .io_import_xact import load_xact
 from .io_import_xcmsh import load_xcmsh
 from .. import log as logging
+from ..io.property_sets import eCResourceMeshLoD_PS
 from ..io.property_types import bCVector
 from ..io.types import bCQuaternion
-from ..util import to_blend_quat, to_blend_vec, without_scale
+from ..util import read_genome_file, to_blend_quat, to_blend_vec, without_scale
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,7 @@ def load_world(context: bpy.types.Context, filepath: Path, data_dir: Path, globa
 
     scene_col = context.scene.collection
     failed_meshes = set()
+    mapped_meshes = {}
 
     global_matrix_no_scale = without_scale(global_matrix)
     global_matrix_no_scale_inv = global_matrix_no_scale.inverted_safe()
@@ -80,9 +82,21 @@ def load_world(context: bpy.types.Context, filepath: Path, data_dir: Path, globa
         if ((filter_location - Vector((88000, -10000, 5000))).length >= 20000) and 'Landscape' not in mesh_name:
             continue
 
+        if mesh_name in mapped_meshes:
+            mesh_name = mapped_meshes[mesh_name]
+
         if mesh_name not in scene_col.children:
             try:
-                # TODO: Support xlmsh for buildings...
+                # Lookup first mesh in LoD mesh.
+                if mesh_name.endswith('.xlmsh'):
+                    mesh_file = _find_file(data_dir / '_compiledMesh', mesh_name)
+                    if not mesh_file:
+                        logger.warning('Failed to find mesh file: {}', mesh_name)
+                        continue
+                    mesh_lod = read_genome_file(mesh_file, eCResourceMeshLoD_PS, allow_fallback=True)
+                    mapped_meshes[mesh_name] = mesh_lod.meshes[0]
+                    mesh_name = mesh_lod.meshes[0]
+
                 if mesh_name.endswith('.xcmsh'):
                     mesh_file = _find_file(data_dir / '_compiledMesh', mesh_name)
                     if not mesh_file:
