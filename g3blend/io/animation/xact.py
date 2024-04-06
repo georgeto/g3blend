@@ -16,7 +16,7 @@ class MaterialReference(BinarySerializable):
         self.mat_index = reader.read_u16()
         try:
             self.name = reader.read_entry()
-        except ValueError | IndexError:
+        except (ValueError, IndexError):
             # Workaround for broken Rimy3D meshes (they don't have a stringtable, but still
             # refer to stringtable entries here)
             self.name = ""
