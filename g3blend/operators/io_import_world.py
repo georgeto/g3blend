@@ -46,7 +46,6 @@ def load_world(context: bpy.types.Context, filepath: Path, data_dir: Path, impor
     with filepath.open('r') as f:
         entities_list = json.load(f)
 
-    scene_col = context.scene.collection
     # Checking whether a name is in context.scene.objects is really slow (iterates through all entries each time),
     # therefore we manage a set of known entities (object names) to speedup the process.
     known_entities = {obj.name for obj in context.scene.objects}
@@ -55,6 +54,17 @@ def load_world(context: bpy.types.Context, filepath: Path, data_dir: Path, impor
 
     global_matrix_no_scale = without_scale(global_matrix)
     global_matrix_no_scale_inv = global_matrix_no_scale.inverted_safe()
+
+    def get_or_create_col(name: str):
+        col = bpy.data.collections[name]
+        if col is None:
+            col = bpy.data.collections.new(name)
+            context.scene.collection.children.link(col)
+        return col
+
+    entities_col = get_or_create_col('Entities')
+    landscape_col = get_or_create_col('Landscape')
+    meshes_col = get_or_create_col('Meshes')
 
     for entity in entities_list['Entities']:
         # Filter lowpoly entities...
@@ -98,9 +108,9 @@ def load_world(context: bpy.types.Context, filepath: Path, data_dir: Path, impor
         if mesh_name in mapped_meshes:
             mesh_name = mapped_meshes[mesh_name]
 
-        if mesh_name not in scene_col.children:
+        if mesh_name not in meshes_col.children:
             mesh_col = bpy.data.collections.new(mesh_name)
-            scene_col.children.link(mesh_col)
+            meshes_col.children.link(mesh_col)
 
             try:
                 # Lookup first mesh in LoD mesh.
@@ -139,11 +149,11 @@ def load_world(context: bpy.types.Context, filepath: Path, data_dir: Path, impor
 
             # Hide from viewport and render of active view layer (cannot set directly on Collection as
             # then also the instance collections are hidden)
-            mesh_layer_col = context.view_layer.layer_collection.children[mesh_col.name]
+            mesh_layer_col = context.view_layer.layer_collection.children[meshes_col.name].children[mesh_col.name]
             mesh_layer_col.exclude = True
             mesh_layer_col.hide_viewport = True
         else:
-            mesh_col = scene_col.children[mesh_name]
+            mesh_col = meshes_col.children[mesh_name]
 
         # TODO: Not sure if this is correct and whether we should forward global_matrix/scale into the mesh loading.
         location = _parse_vec3(entity['Position']) * global_scale
@@ -158,7 +168,10 @@ def load_world(context: bpy.types.Context, filepath: Path, data_dir: Path, impor
         instance_obj.instance_type = 'COLLECTION'
         instance_obj.matrix_basis = global_matrix_no_scale @ Matrix.LocRotScale(location, rotation,
                                                                                 scaling) @ global_matrix_no_scale_inv
-        scene_col.objects.link(instance_obj)
+        if 'Landscape' in mesh_name:
+            landscape_col.objects.link(instance_obj)
+        else:
+            entities_col.objects.link(instance_obj)
         known_entities.add(entity_name)
 
     if failed_meshes:
