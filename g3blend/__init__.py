@@ -25,12 +25,14 @@ def menu_func_import(self, context):
     self.layout.operator(ui.io_import_xact.ImportXact.bl_idname, text="Gothic 3 Actor (.xact)")
     self.layout.operator(ui.io_import_xmot.ImportXmot.bl_idname, text="Gothic 3 Motion (.xmot)")
     self.layout.operator(ui.io_import_xcmsh.ImportXcmsh.bl_idname, text="Gothic 3 Mesh (.xcmsh)")
+    self.layout.operator(ui.io_import_world.ImportWorld.bl_idname, text="Gothic 3 World (entities.json)")
 
 
 ui_modules = (
     ui.io_import_xact,
     ui.io_import_xmot,
     ui.io_import_xcmsh,
+    ui.io_import_world,
     ui.io_export_xact,
     ui.io_export_xmot,
 )

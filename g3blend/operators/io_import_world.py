@@ -38,8 +38,11 @@ def _parse_vec3(raw: str) -> Vector:
     return to_blend_vec(bCVector(float(splitted[0]), float(splitted[1]), float(splitted[2])))
 
 
-def load_world(context: bpy.types.Context, filepath: Path, data_dir: Path, global_scale: float, global_matrix: Matrix,
-               bake_transform: bool):
+def load_world(context: bpy.types.Context, filepath: Path, data_dir: Path, import_position: Vector,
+               import_radius: float, ignore_y: bool, global_scale: float, global_matrix: Matrix, bake_transform: bool):
+    if not data_dir.is_dir() or not (data_dir / '_compiledMesh').is_dir():
+        raise ValueError('Please specify a valid resource directory')
+
     with filepath.open('r') as f:
         entities_list = json.load(f)
 
@@ -80,12 +83,16 @@ def load_world(context: bpy.types.Context, filepath: Path, data_dir: Path, globa
             continue
 
         filter_location = _parse_vec3(entity['Position'])
+        filter_location = Vector((filter_location.x, filter_location.z, filter_location.y))
         # TODO: Landscape seems incorrectly scaled or something, does not align at least.
         #       NO, not only landscape, it is everything. Everything is somehow misaligned. Maybe missing some conversion? Or apply of global matrix?
         #       -> Indeed meshes are wrongly rotated / flipped (see the sawlog in ardea, or the rotation of the hero).
         #       -> YESSSS, rotating the global matrix by 180° helps. Weird. Ah of course, we apply the global matrix twice.
         #       -> Once on import of the meshes and once on the object instance.
-        if ((filter_location - Vector((88000, -10000, 5000))).length >= 20000) and 'Landscape' not in mesh_name:
+        filter_relative = filter_location - import_position
+        if ignore_y:
+            filter_relative.y = 0
+        if filter_relative.length > import_radius and 'Landscape' not in mesh_name:
             continue
 
         if mesh_name in mapped_meshes:
