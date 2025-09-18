@@ -193,10 +193,16 @@ def load_xmot(context: bpy.types.Context, filepath: str, arm_obj: bpy.types.Obje
     action = bpy.data.actions.new(name)
     action.use_fake_user = True
     action.use_cyclic = True
-    animation_data = arm_obj.animation_data
-    if animation_data is None:
-        animation_data = arm_obj.animation_data_create()
-    animation_data.action = action
+
+    if not arm_obj.animation_data:
+        arm_obj.animation_data_create()
+
+    arm_obj.animation_data.action = action
+    # Support for Slotted Actions as introduced in Blender 4.4
+    if hasattr(arm_obj.animation_data, 'action_slot'):
+        # Create an Action Slot. Curves created via action.fcurves will automatically be assigned to it.
+        action.slots.new(arm_obj.id_type, arm_obj.name)
+        arm_obj.animation_data.action_slot = action.slots[0]
 
     # Store frame effects as custom properties
     frame_effects = {str(f.key_frame): f.effect_name for f in xmot.frame_effects}
