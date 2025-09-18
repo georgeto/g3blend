@@ -36,7 +36,7 @@ class AbstractFilePanel(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         operator = context.active_operator.bl_rna
-        return getattr(operator, 'bl_idname', None) == cls.TARGET_OPERATOR.bl_idname
+        return operator.identifier == cls.TARGET_OPERATOR.bl_rna.identifier
 
     def draw(self, context):
         layout = self.layout
