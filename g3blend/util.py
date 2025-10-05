@@ -65,6 +65,14 @@ def similar_values_iter(v1, v2, epsilon=1e-4):
     return v1 == v2 or all(math.isclose(c1, c2, abs_tol=epsilon) for c1, c2 in zip(v1, v2))
 
 
+def trunc_safe(v, epsilon=1e-4):
+    return math.trunc(v + epsilon)
+
+
+def ceil_safe(v, epsilon=1e-4):
+    return math.ceil(v - epsilon)
+
+
 # Matrix to rotate local axes of all bones for better looking of models in Blender which were created in 3ds max.
 # (In 3dsmax any bone lies along its local X direction, however in Blender any bone lies along its local Y direction,
 # so we can want to rotate axes around Z direction to match the directions).

@@ -1,4 +1,3 @@
-import math
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -9,8 +8,8 @@ from .. import log as logging
 from ..io.animation.chunks import AnimationType, InterpolationType, KeyFrame, KeyFrameChunk, MotionPartChunk, \
     QuaternionKeyFrame, VectorKeyFrame
 from ..io.animation.xmot import ResourceAnimationMotion as Xmot
-from ..util import bone_correction_matrix, bone_correction_matrix_inv, calc_arm_root_transformation, read_genome_file, \
-    to_blend_quat, to_blend_vec
+from ..util import bone_correction_matrix, bone_correction_matrix_inv, calc_arm_root_transformation, ceil_safe, \
+    read_genome_file, to_blend_quat, to_blend_vec, trunc_safe
 
 logger = logging.getLogger(__name__)
 
@@ -238,6 +237,6 @@ def load_xmot(context: bpy.types.Context, filepath: str, arm_obj: bpy.types.Obje
                                pose_bone, pre_matrix, post_matrix, state, synthesized=True)
 
     if state.min_frame_time is not None:
-        context.scene.frame_start = math.trunc(state.min_frame_time * fps)
-        context.scene.frame_end = math.ceil(state.max_frame_time * fps)
+        context.scene.frame_start = trunc_safe(state.min_frame_time * fps)
+        context.scene.frame_end = ceil_safe(state.max_frame_time * fps)
         context.scene.frame_current = 0
