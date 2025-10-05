@@ -5,7 +5,7 @@ from . import ui
 bl_info = {
     "name": "Gothic 3",
     "author": "georgeto",
-    "version": (0, 2, 0),
+    "version": (0, 2, 1),
     "description": "Gothic 3 Import/Export meshes, materials, textures, animations",
     "blender": (3, 5, 0),
     "location": "File > Import-Export",
