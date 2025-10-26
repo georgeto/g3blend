@@ -1,4 +1,4 @@
-_ADDON_VERSION = (0, 2, 1)
+_ADDON_VERSION = (0, 3, 0)
 
 
 def get_addon_version() -> tuple[int, int, int]:
