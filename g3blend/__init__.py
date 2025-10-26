@@ -1,6 +1,6 @@
 import bpy
 
-from . import meta, ui
+from . import extension, meta, ui
 
 bl_info = {
     "name": "Gothic 3",
@@ -27,28 +27,36 @@ def menu_func_import(self, context):
     self.layout.operator(ui.io_import_xcmsh.ImportXcmsh.bl_idname, text="Gothic 3 Mesh (.xcmsh)")
 
 
-ui_modules = (
+modules = (
+    ui.frame_effects,
     ui.io_import_xact,
     ui.io_import_xmot,
     ui.io_import_xcmsh,
     ui.io_export_xact,
     ui.io_export_xmot,
+    extension,
 )
 
 
 def register():
-    for ui_module in ui_modules:
-        for cls in ui_module.classes:
+    for module in modules:
+        for cls in module.classes:
             bpy.utils.register_class(cls)
+
+        if on_register := getattr(module, 'on_register', None):
+            on_register()
 
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
 
 
 def unregister():
-    for ui_module in ui_modules:
-        for cls in ui_module.classes:
+    for module in modules:
+        for cls in module.classes:
             bpy.utils.unregister_class(cls)
+
+        if on_unregister := getattr(module, 'on_unregister', None):
+            on_unregister()
 
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)

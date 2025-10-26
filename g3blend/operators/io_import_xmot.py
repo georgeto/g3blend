@@ -5,6 +5,7 @@ import bpy
 from mathutils import Matrix
 
 from .. import log as logging
+from ..extension import initialize_g3blend_ext
 from ..io.animation.chunks import AnimationType, InterpolationType, KeyFrame, KeyFrameChunk, MotionPartChunk, \
     QuaternionKeyFrame, VectorKeyFrame
 from ..io.animation.xmot import ResourceAnimationMotion as Xmot
@@ -192,6 +193,7 @@ def load_xmot(context: bpy.types.Context, filepath: str, arm_obj: bpy.types.Obje
     action = bpy.data.actions.new(name)
     action.use_fake_user = True
     action.use_cyclic = True
+    initialize_g3blend_ext(action)
 
     if not arm_obj.animation_data:
         arm_obj.animation_data_create()
@@ -204,8 +206,12 @@ def load_xmot(context: bpy.types.Context, filepath: str, arm_obj: bpy.types.Obje
         arm_obj.animation_data.action_slot = action.slots[0]
 
     # Store frame effects as custom properties
-    frame_effects = {str(f.key_frame): f.effect_name for f in xmot.frame_effects}
-    action["frame_effects"] = frame_effects
+
+    action.g3blend_ext.frame_effects.clear()
+    for f in xmot.frame_effects:
+        frame_effect = action.g3blend_ext.frame_effects.add()
+        frame_effect.key_frame = f.key_frame
+        frame_effect.effect_name = f.effect_name
 
     root_scale, root_matrix_no_scale = calc_arm_root_transformation(arm_obj.matrix_basis, global_scale,
                                                                     global_matrix, ignore_transform)

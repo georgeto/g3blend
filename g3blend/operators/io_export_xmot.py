@@ -6,6 +6,7 @@ import bpy
 from mathutils import Matrix, Quaternion, Vector
 
 from .. import log as logging
+from ..extension import migrate
 from ..io.animation.chunks import AnimationType, InterpolationType, KeyFrameChunk, MotionPartChunk, \
     QuaternionKeyFrame, \
     VectorKeyFrame
@@ -46,6 +47,7 @@ def save_xmot(context: bpy.types.Context, filepath: str, arm_obj: bpy.types.Obje
 
     # 2. Figure out keyframe/animation data for each bone
     action = arm_obj.animation_data.action
+    migrate(action)
 
     # Action animated values are relative to rest pose, so exactly what we need.
     grouped_curves: dict[str, list[bpy.types.FCurve]] = defaultdict(list)
@@ -201,7 +203,7 @@ def save_xmot(context: bpy.types.Context, filepath: str, arm_obj: bpy.types.Obje
                 key_frame.frames.append(xframe)
 
     # Extract frame effects.
-    xmot.frame_effects = [eSFrameEffect(int(frame), effect) for frame, effect in _extract_frame_effects(action).items()]
+    xmot.frame_effects = [eSFrameEffect(f.key_frame, f.effect_name) for f in action.g3blend_ext.frame_effects]
 
     write_genome_file(Path(filepath), xmot)
 
@@ -224,18 +226,6 @@ def save_xmot(context: bpy.types.Context, filepath: str, arm_obj: bpy.types.Obje
 
     # Restore scene frame selection
     context.scene.frame_set(old_scene_frame_current)
-
-
-def _extract_frame_effects(action: bpy.types.Action) -> dict[int, str]:
-    frame_effects = action.get('frame_effects', None)
-    if frame_effects is None:
-        return {}
-
-    items = getattr(frame_effects, "items", lambda: None)()
-    if items is None:
-        raise ValueError("The frame_effects property of action must be a dictionary.")
-
-    return {int(frame): effect for frame, effect in items}
 
 
 def _extract_frames_from_curves(curves: list[bpy.types.FCurve], num_channels: int, combine) -> Optional[
