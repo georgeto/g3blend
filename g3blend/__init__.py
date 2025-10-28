@@ -1,11 +1,11 @@
 import bpy
 
-from . import extension, meta, ui
+from . import extension, ui
 
 bl_info = {
     "name": "Gothic 3",
     "author": "georgeto",
-    "version": meta.get_addon_version(),
+    "version": (0, 3, 0),
     "description": "Gothic 3 Import/Export meshes, materials, textures, animations",
     "blender": (3, 5, 0),
     "location": "File > Import-Export",
