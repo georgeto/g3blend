@@ -15,11 +15,24 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+        with:
+          # Required for changelog generation
+          fetch-depth: 0
+          fetch-tags: true
 
       - name: Create addon zip
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           zip -r g3blend-${VERSION}.zip . -i 'g3blend/*'
+
+      - name: Generate changelog
+        run: |
+          PREV_TAG="$(git tag --sort=-version:refname --merged ${GITHUB_REF_NAME}~1 | head -n 1)"
+          if [[ -n "${PREV_TAG}" ]]; then
+            git log "${PREV_TAG}..${GITHUB_REF_NAME}~1" --pretty=format:"- %s%n%w(0,2,2)%b" > CHANGELOG_TEMP.md
+          else
+            echo "Unable to generate changelog: No previous tag found" > CHANGELOG_TEMP.md
+          fi
 
       - name: Create Draft Release.
         env:
@@ -27,4 +40,4 @@ jobs:
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           gh release create ${{ github.ref_name }} g3blend-${VERSION}.zip \
-            --title "g3blend ${VERSION}" --generate-notes --draft
+            --title "g3blend ${VERSION}" --notes-file CHANGELOG_TEMP.md --draft
