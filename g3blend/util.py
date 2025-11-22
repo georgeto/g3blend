@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Iterable, Optional, Type, TypeVar
 
 import bpy
+from bpy.types import Action, FCurve
 from bpy_extras.io_utils import axis_conversion
 from mathutils import Matrix, Quaternion, Vector
 
@@ -191,3 +192,33 @@ def reset_scene():
 # Note that when no default unit is available, we assume 'meters' (and hence scale by 100).
 def units_blender_to_g3_factor(scene):
     return 100.0 if (scene.unit_settings.system == 'NONE') else (100.0 * scene.unit_settings.scale_length)
+
+
+try:
+    # Starting with Blender 5.0 the legacy Action API was dropped, but fortunately helper functions is provided to ease
+    # transitioning to the new API.
+    from bpy_extras.anim_utils import action_ensure_channelbag_for_slot
+    from bpy_extras.anim_utils import action_get_channelbag_for_slot
+
+
+    def action_new_fcurve(action: Action, action_slot: 'bpy.types.ActionSlot', data_path: str, index: int,
+                          group_name) -> FCurve:
+        channelbag = action_ensure_channelbag_for_slot(action, action_slot)
+        return channelbag.fcurves.new(data_path, index=index, group_name=group_name)
+
+
+    def action_get_fcurves(action: Action, action_slot: 'bpy.types.ActionSlot') -> Iterable[FCurve]:
+        if channelbag := action_get_channelbag_for_slot(action, action_slot):
+            return channelbag.fcurves
+        else:
+            return []
+
+except ImportError:
+    # For older versions fall back to the legacy API.
+    def action_new_fcurve(action: Action, _: 'bpy.types.ActionSlot', data_path: str, index: int,
+                          group_name) -> FCurve:
+        return action.fcurves.new(data_path, index=index, action_group=group_name)
+
+
+    def action_get_fcurves(action: Action, _: 'bpy.types.ActionSlot') -> Iterable[FCurve]:
+        return action.fcurves

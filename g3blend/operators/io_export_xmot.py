@@ -12,8 +12,8 @@ from ..io.animation.chunks import AnimationType, InterpolationType, KeyFrameChun
     VectorKeyFrame
 from ..io.animation.xmot import ResourceAnimationMotion as Xmot, eCWrapper_emfx2Motion, eSFrameEffect
 from ..io.property_types import bCDateTime
-from ..util import _from_blend_quat, _from_blend_vec, bone_correction_matrix_inv, calc_arm_root_transformation, \
-    write_genome_file
+from ..util import _from_blend_quat, _from_blend_vec, action_get_fcurves, bone_correction_matrix_inv, \
+    calc_arm_root_transformation, write_genome_file
 
 logger = logging.getLogger(__name__)
 
@@ -49,9 +49,14 @@ def save_xmot(context: bpy.types.Context, filepath: str, arm_obj: bpy.types.Obje
     action = arm_obj.animation_data.action
     migrate(action)
 
+    action_slot = None
+    # Support for Slotted Actions as introduced in Blender 4.4
+    if hasattr(arm_obj.animation_data, 'action_slot'):
+        action_slot = action.slots[0]
+
     # Action animated values are relative to rest pose, so exactly what we need.
     grouped_curves: dict[str, list[bpy.types.FCurve]] = defaultdict(list)
-    for curve in action.fcurves:
+    for curve in action_get_fcurves(action, action_slot):
         grouped_curves[curve.data_path].append(curve)
 
     frames_per_bone = {}

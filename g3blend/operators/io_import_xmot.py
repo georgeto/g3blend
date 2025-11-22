@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
 import bpy
 from mathutils import Matrix
@@ -9,8 +10,8 @@ from ..extension import initialize_g3blend_ext
 from ..io.animation.chunks import AnimationType, InterpolationType, KeyFrame, KeyFrameChunk, MotionPartChunk, \
     QuaternionKeyFrame, VectorKeyFrame
 from ..io.animation.xmot import ResourceAnimationMotion as Xmot
-from ..util import bone_correction_matrix, bone_correction_matrix_inv, calc_arm_root_transformation, ceil_safe, \
-    read_genome_file, to_blend_quat, to_blend_vec, trunc_safe
+from ..util import action_new_fcurve, bone_correction_matrix, bone_correction_matrix_inv, calc_arm_root_transformation, \
+    ceil_safe, read_genome_file, to_blend_quat, to_blend_vec, trunc_safe
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,7 @@ logger = logging.getLogger(__name__)
 class _ImportState:
     arm_obj: bpy.types.Object
     action: bpy.types.Action
+    action_slot: Optional['bpy.types.ActionSlot']
     fps: float
     root_scale: float
     root_matrix_no_scale: Matrix
@@ -153,7 +155,7 @@ def _import_key_frames(animation_type: AnimationType, interpolation_type: Interp
             raise ValueError(f'Unsupported interpolation type: {interpolation_type}')
 
     prop = pose_bone.path_from_id(curve_path)
-    curves = [state.action.fcurves.new(prop, index=channel, action_group=pose_bone.name)
+    curves = [action_new_fcurve(state.action, state.action_slot, prop, index=channel, group_name=pose_bone.name)
               for channel in range(num_channels)]
 
     # TODO: Cycle vs. Extrapolation
@@ -199,14 +201,15 @@ def load_xmot(context: bpy.types.Context, filepath: str, arm_obj: bpy.types.Obje
         arm_obj.animation_data_create()
 
     arm_obj.animation_data.action = action
+    action_slot = None
     # Support for Slotted Actions as introduced in Blender 4.4
     if hasattr(arm_obj.animation_data, 'action_slot'):
         # Create an Action Slot. Curves created via action.fcurves will automatically be assigned to it.
         action.slots.new(arm_obj.id_type, arm_obj.name)
-        arm_obj.animation_data.action_slot = action.slots[0]
+        action_slot = action.slots[0]
+        arm_obj.animation_data.action_slot = action_slot
 
     # Store frame effects as custom properties
-
     action.g3blend_ext.frame_effects.clear()
     for f in xmot.frame_effects:
         frame_effect = action.g3blend_ext.frame_effects.add()
@@ -216,7 +219,7 @@ def load_xmot(context: bpy.types.Context, filepath: str, arm_obj: bpy.types.Obje
     root_scale, root_matrix_no_scale = calc_arm_root_transformation(arm_obj.matrix_basis, global_scale,
                                                                     global_matrix, ignore_transform)
 
-    state = _ImportState(arm_obj, action, fps, root_scale, root_matrix_no_scale)
+    state = _ImportState(arm_obj, action, action_slot, fps, root_scale, root_matrix_no_scale)
 
     for motion_part, key_frames in _group_motion_parts(xmot):
         if motion_part.name not in arm_obj.pose.bones:
