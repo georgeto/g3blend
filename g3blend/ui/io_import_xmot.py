@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import bpy
 from bpy.props import BoolProperty, CollectionProperty, EnumProperty, IntProperty, StringProperty
 from bpy_extras.io_utils import ImportHelper
@@ -53,7 +55,16 @@ class ImportXmot(bpy.types.Operator, ImportHelper, AxisHelper):
         try:
             global_scale, global_matrix = self._global_transform(context)
             target_armature = get_object_for_armature_item(context, self.target_armature)
-            load_xmot(context, self.filepath, target_armature, global_scale, global_matrix, self.ignore_transform)
+
+            directory = Path(self.filepath).parent
+
+            if self.files:
+                for f in self.files:
+                    filepath = str(directory / f.name)
+                    load_xmot(context, filepath, target_armature, global_scale, global_matrix, self.ignore_transform)
+            else:
+                load_xmot(context, self.filepath, target_armature, global_scale, global_matrix, self.ignore_transform)
+
             self.target_armature_index = 0
         except Exception as e:
             self.report({'ERROR'}, f'Error while importing {self.filepath}: {e}')
