@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import bpy
 from bpy.props import BoolProperty, EnumProperty, IntProperty, StringProperty
 from bpy_extras.io_utils import ExportHelper
@@ -79,7 +81,7 @@ class ExportXmot(bpy.types.Operator, ExportHelper, AxisHelper):
         try:
             global_scale, global_matrix = self._global_transform(context)
             target_armature = get_object_for_armature_item(context, self.target_armature)
-            save_xmot(context, self.filepath, target_armature, global_scale, global_matrix, self.ignore_transform,
+            save_xmot(context, Path(self.filepath), target_armature, global_scale, global_matrix, self.ignore_transform,
                       self.bone_filter)
             self.target_armature_index = 0
         except Exception as e:

@@ -18,12 +18,18 @@ class ImportXmot(bpy.types.Operator, ImportHelper, AxisHelper):
     bl_label = 'Import Motion (xmot)'
     bl_options = {'UNDO', 'PRESET'}
 
+    directory: StringProperty(
+        subtype='DIR_PATH',
+        options={'HIDDEN', 'SKIP_PRESET'},
+    )
+
     filename_ext = '.xmot'
     filter_glob: StringProperty(default='*.xmot', options={'HIDDEN'})
 
     files: CollectionProperty(
         name='File Path',
         type=bpy.types.OperatorFileListElement,
+        options={'HIDDEN', 'SKIP_PRESET'},
     )
 
     ignore_transform: BoolProperty(
@@ -56,14 +62,14 @@ class ImportXmot(bpy.types.Operator, ImportHelper, AxisHelper):
             global_scale, global_matrix = self._global_transform(context)
             target_armature = get_object_for_armature_item(context, self.target_armature)
 
-            directory = Path(self.filepath).parent
-
             if self.files:
+                directory = Path(self.directory)
                 for f in self.files:
-                    filepath = str(directory / f.name)
+                    filepath = directory / f.name
                     load_xmot(context, filepath, target_armature, global_scale, global_matrix, self.ignore_transform)
             else:
-                load_xmot(context, self.filepath, target_armature, global_scale, global_matrix, self.ignore_transform)
+                load_xmot(context, Path(self.filepath), target_armature, global_scale, global_matrix,
+                          self.ignore_transform)
 
             self.target_armature_index = 0
         except Exception as e:

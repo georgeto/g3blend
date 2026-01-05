@@ -182,10 +182,10 @@ def _import_key_frames(animation_type: AnimationType, interpolation_type: Interp
         curve.update()
 
 
-def load_xmot(context: bpy.types.Context, filepath: str, arm_obj: bpy.types.Object, global_scale: float,
+def load_xmot(context: bpy.types.Context, filepath: Path, arm_obj: bpy.types.Object, global_scale: float,
               global_matrix: Matrix, ignore_transform: bool):
-    name = Path(filepath).stem
-    xmot = read_genome_file(Path(filepath), Xmot)
+    name = filepath.stem
+    xmot = read_genome_file(filepath, Xmot)
 
     if arm_obj is None:
         raise ValueError("No target armature was selected.")

@@ -25,7 +25,7 @@ COMMONLY_USED_SLOTS = {
 }
 
 
-def save_xmot(context: bpy.types.Context, filepath: str, arm_obj: bpy.types.Object, global_scale: float,
+def save_xmot(context: bpy.types.Context, filepath: Path, arm_obj: bpy.types.Object, global_scale: float,
               global_matrix: Matrix, ignore_transform: bool, bone_filter: str):
     xmot = Xmot()
     xmot.resource_size = 0
@@ -210,7 +210,7 @@ def save_xmot(context: bpy.types.Context, filepath: str, arm_obj: bpy.types.Obje
     # Extract frame effects.
     xmot.frame_effects = [eSFrameEffect(f.key_frame, f.effect_name) for f in action.g3blend_ext.frame_effects]
 
-    write_genome_file(Path(filepath), xmot)
+    write_genome_file(filepath, xmot)
 
     # From FBX:
     # For meshes, when armature export is enabled, disable Armature modifiers here!
