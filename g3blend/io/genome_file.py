@@ -4,8 +4,8 @@ from .binary import BinaryReader, BinaryWriter, TBinarySerializable
 from .property_sets.property_set import PropertySet
 from .property_sets.util import read_property_set, write_property_set
 
-_GENOME_MAGIC = b'\x47\x45\x4E\x4F\x4D\x46\x4C\x45'
-_DEADBEEF = b'\xEF\xBE\xAD\xDE'
+_GENOME_MAGIC = b'\x47\x45\x4e\x4f\x4d\x46\x4c\x45'
+_DEADBEEF = b'\xef\xbe\xad\xde'
 _VERSION = 1
 
 
@@ -19,8 +19,9 @@ def _read_content(reader: BinaryReader, content_type: Type[TBinarySerializable])
         return reader.read(content_type)
 
 
-def read(reader: BinaryReader, content_type: Type[TBinarySerializable],
-         allow_fallback: bool = False) -> TBinarySerializable:
+def read(
+    reader: BinaryReader, content_type: Type[TBinarySerializable], allow_fallback: bool = False
+) -> TBinarySerializable:
     if not reader.expect_bytes(_GENOME_MAGIC):
         if allow_fallback:
             return _read_content(reader, content_type)

@@ -13,8 +13,7 @@ class eCShaderBase(eCShaderEllementBase):
     shader_elements: list[PropertySet]
 
     def get_element(self, token: bCGuid) -> Optional[eCShaderEllementBase]:
-        return next((e for e in self.shader_elements if isinstance(e, eCShaderEllementBase) and e.token == token),
-                    None)
+        return next((e for e in self.shader_elements if isinstance(e, eCShaderEllementBase) and e.token == token), None)
 
     def read_post_version(self, reader: BinaryReader) -> None:
         if reader.read_u16() != 1:

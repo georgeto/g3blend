@@ -84,7 +84,6 @@ class eCShaderParticle(eCShaderBase):
         super().read_post_version(reader)
 
     def write_post_version(self, writer: BinaryWriter) -> None:
-
         writer.write(self.color_src_diffuse)
 
         if self.version > 1:
@@ -152,7 +151,6 @@ class eCShaderWater(eCShaderBase):
         super().read_post_version(reader)
 
     def write_post_version(self, writer: BinaryWriter) -> None:
-
         writer.write(self.color_src_diffuse)
         writer.write(self.color_src_static_bump)
         writer.write(self.color_src_flowing_bump)

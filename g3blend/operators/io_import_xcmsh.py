@@ -10,9 +10,7 @@ from ..io.property_sets import eCResourceMeshComplex_PS
 from ..io.property_types import bCVector, bCVector2
 from ..io.structs import eCMeshElement
 from ..io.structs.mesh_element import eEVertexStreamArrayType
-from ..util import read_genome_file, \
-    to_blend_vec2_tuple, \
-    to_blend_vec_tuple, to_blend_vec_tuple_transform
+from ..util import read_genome_file, to_blend_vec2_tuple, to_blend_vec_tuple, to_blend_vec_tuple_transform
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +23,14 @@ class _ImportState:
     bake_transform: bool
 
 
-def load_xcmsh(context: bpy.types.Context, filepath: Path, mesh_name: str, global_scale: float, global_matrix: Matrix,
-               bake_transform: bool):
+def load_xcmsh(
+    context: bpy.types.Context,
+    filepath: Path,
+    mesh_name: str,
+    global_scale: float,
+    global_matrix: Matrix,
+    bake_transform: bool,
+):
     name = mesh_name if mesh_name else filepath.stem
     mesh_complex = read_genome_file(filepath, eCResourceMeshComplex_PS, allow_fallback=True)
 

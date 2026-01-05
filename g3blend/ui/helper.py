@@ -12,18 +12,16 @@ from ..util import find_armature, units_blender_to_g3_factor
 # Swap Y and Z and then flip forward direction to convert from left-handed (Gothic 3) to right-handed (Blender).
 @orientation_helper(axis_forward='-Y', axis_up='Z')  # with to_forward='Y', to_up='Z' (default)
 class AxisHelper:
-    global_scale: FloatProperty(
-        name='Scale',
-        min=0.001, max=1000.0,
-        default=1.0,
-    )
+    global_scale: FloatProperty(name='Scale', min=0.001, max=1000.0, default=1.0)
 
     def _global_transform(self, context):
         global_scale = self.global_scale
-        global_scale *= (1.0 / units_blender_to_g3_factor(context.scene))
+        global_scale *= 1.0 / units_blender_to_g3_factor(context.scene)
 
-        global_matrix = (Matrix.Scale(global_scale, 4) @
-                         axis_conversion(from_forward=self.axis_forward, from_up=self.axis_up).to_4x4())
+        global_matrix = (
+            Matrix.Scale(global_scale, 4)
+            @ axis_conversion(from_forward=self.axis_forward, from_up=self.axis_up).to_4x4()
+        )
 
         return global_scale, global_matrix
 

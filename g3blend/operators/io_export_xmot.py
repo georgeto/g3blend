@@ -7,13 +7,24 @@ from mathutils import Matrix, Quaternion, Vector
 
 from .. import log as logging
 from ..extension import migrate
-from ..io.animation.chunks import AnimationType, InterpolationType, KeyFrameChunk, MotionPartChunk, \
-    QuaternionKeyFrame, \
-    VectorKeyFrame
+from ..io.animation.chunks import (
+    AnimationType,
+    InterpolationType,
+    KeyFrameChunk,
+    MotionPartChunk,
+    QuaternionKeyFrame,
+    VectorKeyFrame,
+)
 from ..io.animation.xmot import ResourceAnimationMotion as Xmot, eCWrapper_emfx2Motion, eSFrameEffect
 from ..io.property_types import bCDateTime
-from ..util import _from_blend_quat, _from_blend_vec, action_get_fcurves, bone_correction_matrix_inv, \
-    calc_arm_root_transformation, write_genome_file
+from ..util import (
+    _from_blend_quat,
+    _from_blend_vec,
+    action_get_fcurves,
+    bone_correction_matrix_inv,
+    calc_arm_root_transformation,
+    write_genome_file,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +36,15 @@ COMMONLY_USED_SLOTS = {
 }
 
 
-def save_xmot(context: bpy.types.Context, filepath: Path, arm_obj: bpy.types.Object, global_scale: float,
-              global_matrix: Matrix, ignore_transform: bool, bone_filter: str):
+def save_xmot(
+    context: bpy.types.Context,
+    filepath: Path,
+    arm_obj: bpy.types.Object,
+    global_scale: float,
+    global_matrix: Matrix,
+    ignore_transform: bool,
+    bone_filter: str,
+):
     xmot = Xmot()
     xmot.resource_size = 0
     xmot.resource_priority = 0.0
@@ -85,7 +103,8 @@ def save_xmot(context: bpy.types.Context, filepath: Path, arm_obj: bpy.types.Obj
         if frames is None:
             raise ValueError(
                 f'Failed to extract keyframe property {prop_name} for bone {pose_bone.name}. '
-                f'Please consult the console for details.')
+                f'Please consult the console for details.'
+            )
 
         key = (pose_bone.name, animation_type)
         if key not in frames_per_bone:
@@ -100,8 +119,9 @@ def save_xmot(context: bpy.types.Context, filepath: Path, arm_obj: bpy.types.Obj
     # Have to jump to first frame of animation so that pose_bone.matrix_basis is set to value of the first frame.
     context.scene.frame_set(0)
 
-    root_scale, root_matrix_no_scale = calc_arm_root_transformation(arm_obj.matrix_basis, global_scale,
-                                                                    global_matrix, ignore_transform)
+    root_scale, root_matrix_no_scale = calc_arm_root_transformation(
+        arm_obj.matrix_basis, global_scale, global_matrix, ignore_transform
+    )
     if isinstance(root_scale, Vector):
         root_scale_inv = Vector((1 / root_scale.x, 1 / root_scale.y, 1 / root_scale.z))
     else:
@@ -175,17 +195,20 @@ def save_xmot(context: bpy.types.Context, filepath: Path, arm_obj: bpy.types.Obj
                 # Position
                 case AnimationType.Position:
                     value_map = lambda p, v: _from_blend_vec(
-                        (pre_matrix @ Matrix.Translation(v) @ post_matrix).to_translation() * root_scale_inv)
+                        (pre_matrix @ Matrix.Translation(v) @ post_matrix).to_translation() * root_scale_inv
+                    )
                     frame_type = VectorKeyFrame
                 # Rotation
                 case AnimationType.Rotation:
                     value_map = lambda p, v: _from_blend_quat(
-                        (pre_matrix @ v.to_matrix().to_4x4() @ post_matrix).to_quaternion())
+                        (pre_matrix @ v.to_matrix().to_4x4() @ post_matrix).to_quaternion()
+                    )
                     frame_type = QuaternionKeyFrame
                 # Scaling
                 case AnimationType.Scaling:
                     value_map = lambda p, v: _from_blend_vec(
-                        (pre_matrix @ Matrix.LocRotScale(None, None, v) @ post_matrix).to_scale().to_3d())
+                        (pre_matrix @ Matrix.LocRotScale(None, None, v) @ post_matrix).to_scale().to_3d()
+                    )
                     frame_type = VectorKeyFrame
                 case _:
                     continue
@@ -233,8 +256,9 @@ def save_xmot(context: bpy.types.Context, filepath: Path, arm_obj: bpy.types.Obj
     context.scene.frame_set(old_scene_frame_current)
 
 
-def _extract_frames_from_curves(curves: list[bpy.types.FCurve], num_channels: int, combine) -> Optional[
-    tuple[str, list[tuple[float, Any]]]]:
+def _extract_frames_from_curves(
+    curves: list[bpy.types.FCurve], num_channels: int, combine
+) -> Optional[tuple[str, list[tuple[float, Any]]]]:
     if len(curves) != num_channels:
         logger.warning('Unexpected number of curves {} vs. {}.', num_channels, len(curves))
         return None
@@ -251,8 +275,9 @@ def _extract_frames_from_curves(curves: list[bpy.types.FCurve], num_channels: in
             num_keyframes = len(curve.keyframe_points)
         else:
             if num_keyframes != len(curve.keyframe_points):
-                logger.warning('Not all channels have same number of frames {} vs. {}.', num_keyframes,
-                               len(curve.keyframe_points))
+                logger.warning(
+                    'Not all channels have same number of frames {} vs. {}.', num_keyframes, len(curve.keyframe_points)
+                )
                 return None
 
         channels.append(curve.keyframe_points)
@@ -266,8 +291,9 @@ def _extract_frames_from_curves(curves: list[bpy.types.FCurve], num_channels: in
         if common_interpolation is None:
             common_interpolation = interpolation
         elif common_interpolation != interpolation:
-            logger.warning('Not all frames have same interpolation of frames {} vs. {}.', common_interpolation,
-                           interpolation)
+            logger.warning(
+                'Not all frames have same interpolation of frames {} vs. {}.', common_interpolation, interpolation
+            )
             return None
         key_frames.append((frame_time, value))
 

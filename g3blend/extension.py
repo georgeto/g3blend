@@ -9,16 +9,12 @@ from .meta import get_addon_version
 
 
 class FrameEffectItem(PropertyGroup):
-    key_frame: bpy.props.IntProperty(name="Frame")
-    effect_name: bpy.props.StringProperty(name="Effect")
+    key_frame: bpy.props.IntProperty(name='Frame')
+    effect_name: bpy.props.StringProperty(name='Effect')
 
 
 class G3blendActionExt(PropertyGroup):
-    version: IntVectorProperty(
-        name="Addon version",
-        default=(0, 0, 0),
-        size=3,
-    )
+    version: IntVectorProperty(name='Addon version', default=(0, 0, 0), size=3)
 
     frame_effects: CollectionProperty(type=FrameEffectItem)
     frame_effects_index: IntProperty(default=0)
@@ -37,7 +33,7 @@ def _migrate_frame_effects(action: bpy.types.Action):
     if frame_effects is None:
         return
 
-    items = getattr(frame_effects, "items", lambda: None)()
+    items = getattr(frame_effects, 'items', lambda: None)()
     if items is None:
         # The frame_effects property of action must be a dictionary.
         return
@@ -68,12 +64,7 @@ def _migrate_defer_callback(action_name: str) -> None:
 
 def defer_migrate(action: bpy.types.Action):
     if _action_needs_migration(action):
-        bpy.app.timers.register(
-            functools.partial(
-                _migrate_defer_callback,
-                action.name,
-            )
-        )
+        bpy.app.timers.register(functools.partial(_migrate_defer_callback, action.name))
 
 
 def migrate_all(context: bpy.types.Context):
@@ -91,10 +82,7 @@ def _save_pre(dummy):
     migrate_all(bpy.context)
 
 
-classes = (
-    FrameEffectItem,
-    G3blendActionExt,
-)
+classes = (FrameEffectItem, G3blendActionExt)
 
 
 def on_register():

@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 class ImportXact(bpy.types.Operator, ImportHelper, AxisHelper):
     """Import from xact file format (.xact)"""
+
     bl_idname = 'g3blend.io_import_xact'
     bl_label = 'Import Actor (xact)'
     bl_options = {'UNDO', 'PRESET'}
@@ -22,9 +23,7 @@ class ImportXact(bpy.types.Operator, ImportHelper, AxisHelper):
     filter_glob: StringProperty(default='*.xact', options={'HIDDEN'})
 
     reset_scene: BoolProperty(
-        name='Reset Scene',
-        description='Remove everything from scene before import',
-        default=False,
+        name='Reset Scene', description='Remove everything from scene before import', default=False
     )
 
     actor_name: StringProperty(
@@ -34,8 +33,8 @@ class ImportXact(bpy.types.Operator, ImportHelper, AxisHelper):
 
     bake_transform: BoolProperty(
         name='Bake Transform',
-        description="Bake space transform into object data, avoids getting unwanted rotations and "
-                    "scale to objects because Gothic 3 space is not aligned with Blender's space",
+        description='Bake space transform into object data, avoids getting unwanted rotations and '
+        "scale to objects because Gothic 3 space is not aligned with Blender's space",
         default=True,
     )
 
@@ -54,8 +53,8 @@ class ImportXact(bpy.types.Operator, ImportHelper, AxisHelper):
     bone_connect: BoolProperty(
         name='Connect Bones',
         description='Normally, the armature bones are connected in such a way that no unnatural deformation can be '
-                    'introduced into the animation. However, occassionaly it might be desired to nevertheless create '
-                    'such an animation, in which case the option can be deactivated to obtain an unconnected armature',
+        'introduced into the animation. However, occassionaly it might be desired to nevertheless create '
+        'such an animation, in which case the option can be deactivated to obtain an unconnected armature',
         default=True,
     )
 
@@ -67,8 +66,17 @@ class ImportXact(bpy.types.Operator, ImportHelper, AxisHelper):
             global_scale, global_matrix = self._global_transform(context)
             if self.reset_scene:
                 reset_scene()
-            load_xact(context, Path(self.filepath), self.actor_name, global_scale, global_matrix, self.show_bone_names,
-                      self.show_bone_axes, self.bone_connect, self.bake_transform)
+            load_xact(
+                context,
+                Path(self.filepath),
+                self.actor_name,
+                global_scale,
+                global_matrix,
+                self.show_bone_names,
+                self.show_bone_axes,
+                self.bone_connect,
+                self.bake_transform,
+            )
             # Reset actor name override on successful import.
             self.actor_name = ''
         except Exception as e:
@@ -92,10 +100,10 @@ class G3BLEND_PT_import_xact_armature(AbstractFilePanel):
     bl_label = 'Armature'
 
     def _draw(self, context, layout: bpy.types.UILayout, operator: bpy.types.Operator):
-        layout.prop(operator, 'bone_connect'),
+        (layout.prop(operator, 'bone_connect'),)
         col = layout.column(heading='Show')
         col.prop(operator, 'show_bone_names', text='Bone Names')
-        col.prop(operator, 'show_bone_axes', text='Bone Axes'),
+        (col.prop(operator, 'show_bone_axes', text='Bone Axes'),)
 
 
 class G3BLEND_PT_import_xact_misc(AbstractFilePanel):
@@ -107,9 +115,4 @@ class G3BLEND_PT_import_xact_misc(AbstractFilePanel):
         layout.prop(operator, 'actor_name')
 
 
-classes = (
-    ImportXact,
-    G3BLEND_PT_import_xact_transform,
-    G3BLEND_PT_import_xact_armature,
-    G3BLEND_PT_import_xact_misc,
-)
+classes = (ImportXact, G3BLEND_PT_import_xact_transform, G3BLEND_PT_import_xact_armature, G3BLEND_PT_import_xact_misc)

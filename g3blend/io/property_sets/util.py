@@ -3,7 +3,7 @@ from ..binary import BinaryReader, BinaryWriter
 
 _SUB_CLASS_IDENTIFIER = b'\x01\x00\x01\x01\x00\x01'
 _TYPE_TO_VERSION_FILLER = b'\x01\x00\x00\x53\x00'
-_DEADCODE = b'\xDE\xAD\xC0\xDE'
+_DEADCODE = b'\xde\xad\xc0\xde'
 
 
 def read_property_set(reader: BinaryReader) -> TPropertySet:

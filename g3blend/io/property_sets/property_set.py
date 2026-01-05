@@ -80,8 +80,12 @@ class PropertySet(BinarySerializable):
             self.properties.append(prop)
         return self
 
-    def add_property_by_desc(self, desc: PropertyDescriptor[TPropertyType], value: TPropertyType,
-                             predecessor: Optional[PropertyDescriptor] = None) -> 'PropertySet':
+    def add_property_by_desc(
+        self,
+        desc: PropertyDescriptor[TPropertyType],
+        value: TPropertyType,
+        predecessor: Optional[PropertyDescriptor] = None,
+    ) -> 'PropertySet':
         prop = Property(desc.name, desc.get_data_type_name(), value)
         if predecessor is None:
             self.properties.insert(0, prop)

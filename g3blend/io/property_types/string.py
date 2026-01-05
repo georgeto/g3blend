@@ -4,8 +4,17 @@ from .decorator import property_type
 from ..binary import BinaryReader, BinarySerializable, BinaryWriter
 
 
-@property_type(aliases=['bCAnimationResourceString', 'bCImageOrMaterialResourceString', 'bCImageResourceString',
-                        'bCMeshResourceString', 'bCScriptString', 'bCSpeedTreeResourceString', 'eCLocString'])
+@property_type(
+    aliases=[
+        'bCAnimationResourceString',
+        'bCImageOrMaterialResourceString',
+        'bCImageResourceString',
+        'bCMeshResourceString',
+        'bCScriptString',
+        'bCSpeedTreeResourceString',
+        'eCLocString',
+    ]
+)
 @dataclass(slots=True)
 class bCString(BinarySerializable):
     value: str

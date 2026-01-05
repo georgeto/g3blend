@@ -18,7 +18,7 @@ class BinarySerializable(ABC):
         pass
 
 
-TBinarySerializable = TypeVar("TBinarySerializable", bound=BinarySerializable)
+TBinarySerializable = TypeVar('TBinarySerializable', bound=BinarySerializable)
 
 T = TypeVar('T')
 _ENCODING = 'windows-1252'
@@ -55,7 +55,7 @@ class BinaryReader:
     def read_bytes(self, num: int) -> bytes:
         pos = self._pos
         self._pos += num
-        return self._buf[pos:pos + num]
+        return self._buf[pos : pos + num]
 
     def expect_bytes(self, expected: bytes) -> bool:
         if self.remaining() < len(expected):
@@ -69,10 +69,10 @@ class BinaryReader:
 
     def peek_bytes(self, num: int, offset: int = 0) -> bytes:
         at = self._pos + offset
-        return self._buf[at:at + num]
+        return self._buf[at : at + num]
 
     def read_bool(self) -> bool:
-        return self.read_u8() & 0xff == 1
+        return self.read_u8() & 0xFF == 1
 
     def read_char(self) -> bytes:
         return self._unpack_single('<c', 1)
@@ -136,9 +136,9 @@ class BinaryReader:
             value.read(self)
         return value
 
-    def read_list(self, typ: Type[TBinarySerializable] = None, read: Callable[['BinaryReader'], T] = None,
-                  num: int = None) -> list[TBinarySerializable] | list[T]:
-
+    def read_list(
+        self, typ: Type[TBinarySerializable] = None, read: Callable[['BinaryReader'], T] = None, num: int = None
+    ) -> list[TBinarySerializable] | list[T]:
         if num is None:
             num = self.read_u32()
 
@@ -149,8 +149,9 @@ class BinaryReader:
         else:
             raise ValueError()
 
-    def read_prefixed_list(self, typ: Type[TBinarySerializable] = None, read: Callable[['BinaryReader'], T] = None,
-                           num: int = None) -> list[TBinarySerializable] | list[T]:
+    def read_prefixed_list(
+        self, typ: Type[TBinarySerializable] = None, read: Callable[['BinaryReader'], T] = None, num: int = None
+    ) -> list[TBinarySerializable] | list[T]:
         # bTArray writes a useless byte during serialization.
         self.skip(1)
         return self.read_list(typ, read, num)
@@ -231,7 +232,7 @@ class BinaryWriter:
         if pos == len(self._buf):
             self._buf.extend(val)
         else:
-            self._buf[pos:pos + len(val)] = val
+            self._buf[pos : pos + len(val)] = val
 
     def write_bool(self, val: bool) -> None:
         self.write_u8(1 if val else 0)
@@ -291,8 +292,9 @@ class BinaryWriter:
     def write(self, value: TBinarySerializable) -> None:
         value.write(self)
 
-    def write_iter(self, vals: Iterable[TBinarySerializable] | Iterable[T],
-                   write: Callable[['BinaryWriter', T], None] = None) -> None:
+    def write_iter(
+        self, vals: Iterable[TBinarySerializable] | Iterable[T], write: Callable[['BinaryWriter', T], None] = None
+    ) -> None:
         for val in vals:
             if write is not None:
                 write(self, val)
@@ -303,8 +305,9 @@ class BinaryWriter:
         self.write_u32(len(vals))
         self.write_iter(vals, write)
 
-    def write_prefixed_list(self, vals: list[TBinarySerializable] | list[T],
-                            write: Callable[['BinaryWriter', T], None] = None):
+    def write_prefixed_list(
+        self, vals: list[TBinarySerializable] | list[T], write: Callable[['BinaryWriter', T], None] = None
+    ):
         # bTArray writes a useless byte during serialization.
         self.write_u8(1)
         self.write_list(vals, write)
@@ -339,7 +342,7 @@ class BinaryWriter:
 
     def peek_bytes(self, num: int, offset: int = 0) -> bytes:
         at = self._pos + offset
-        return self._buf[at:at + num]
+        return self._buf[at : at + num]
 
     def __str__(self) -> str:
         pos = self.position()

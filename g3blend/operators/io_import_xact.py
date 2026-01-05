@@ -8,9 +8,18 @@ from mathutils import Matrix, Vector
 from .. import log as logging
 from ..io.animation.chunks import MeshChunk, NodeChunk, SkinningInfoChunk, Submesh
 from ..io.animation.xact import ResourceAnimationActor as Xact, eCWrapper_emfx2Actor
-from ..util import bone_correction_matrix, bone_correction_matrix_inv, get_child_nodes, read_genome_file, \
-    similar_values_iter, to_blend_quat, to_blend_vec, to_blend_vec2_tuple, \
-    to_blend_vec_tuple, to_blend_vec_tuple_transform
+from ..util import (
+    bone_correction_matrix,
+    bone_correction_matrix_inv,
+    get_child_nodes,
+    read_genome_file,
+    similar_values_iter,
+    to_blend_quat,
+    to_blend_vec,
+    to_blend_vec2_tuple,
+    to_blend_vec_tuple,
+    to_blend_vec_tuple_transform,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -26,8 +35,17 @@ class _ImportState:
     bake_transform: bool
 
 
-def load_xact(context: bpy.types.Context, filepath: Path, actor_name: str, global_scale: float, global_matrix: Matrix,
-              show_bone_names: bool, show_bone_axes: bool, bone_connect: bool, bake_transform: bool):
+def load_xact(
+    context: bpy.types.Context,
+    filepath: Path,
+    actor_name: str,
+    global_scale: float,
+    global_matrix: Matrix,
+    show_bone_names: bool,
+    show_bone_axes: bool,
+    bone_connect: bool,
+    bake_transform: bool,
+):
     name = actor_name if actor_name else filepath.stem
     xact = read_genome_file(filepath, Xact)
 
@@ -38,8 +56,9 @@ def load_xact(context: bpy.types.Context, filepath: Path, actor_name: str, globa
     context.view_layer.objects.active = actor_obj
     actor_obj.select_set(True)
 
-    state = _ImportState(context, global_scale, global_matrix, show_bone_names, show_bone_axes, bone_connect,
-                         bake_transform)
+    state = _ImportState(
+        context, global_scale, global_matrix, show_bone_names, show_bone_axes, bone_connect, bake_transform
+    )
 
     armature_obj = _import_armature(name, xact, state)
     armature_obj.parent = actor_obj
@@ -50,8 +69,9 @@ def load_xact(context: bpy.types.Context, filepath: Path, actor_name: str, globa
         context.scene.collection.objects.link(mesh_obj)
 
 
-def _import_meshes(name: str, actor: eCWrapper_emfx2Actor, armature_obj: bpy.types.Object, state: _ImportState) \
-        -> list[bpy.types.Object]:
+def _import_meshes(
+    name: str, actor: eCWrapper_emfx2Actor, armature_obj: bpy.types.Object, state: _ImportState
+) -> list[bpy.types.Object]:
     nodes = actor.get_chunks_by_type(NodeChunk)
     skinning = actor.get_chunk_by_type(SkinningInfoChunk)
 
@@ -84,7 +104,7 @@ def _import_mesh(mesh_name: str, submesh: Submesh, state: _ImportState) -> bpy.t
     mesh.from_pydata(vertices, [], faces)
     if mesh.validate(verbose=True):
         # Avoid crash
-        logger.error("INVALID MESH {}", mesh_name)
+        logger.error('INVALID MESH {}', mesh_name)
         return None
 
     # UVSets
@@ -97,8 +117,13 @@ def _import_mesh(mesh_name: str, submesh: Submesh, state: _ImportState) -> bpy.t
     return mesh
 
 
-def _import_skinning(submesh: Submesh, nodes: list[NodeChunk], skinning: SkinningInfoChunk,
-                     mesh_obj: bpy.types.Object, armature_obj: bpy.types.Object):
+def _import_skinning(
+    submesh: Submesh,
+    nodes: list[NodeChunk],
+    skinning: SkinningInfoChunk,
+    mesh_obj: bpy.types.Object,
+    armature_obj: bpy.types.Object,
+):
     # Skinning
     mod: bpy.types.ArmatureModifier = mesh_obj.modifiers.new(armature_obj.name, 'ARMATURE')
     mod.object = armature_obj
@@ -169,9 +194,15 @@ def _is_obsolete_joint(node: NodeChunk):
     return (name.endswith('_ROOT') or name.endswith('_END')) and len(name.split('_')) > 2
 
 
-def _import_armature_node(arm_data: bpy.types.Armature, parent_matrix: Matrix, parent_correction_matrix_inv: Matrix,
-                          parent_bone: Optional[bpy.types.EditBone], node: NodeChunk, nodes: list[NodeChunk],
-                          state: _ImportState):
+def _import_armature_node(
+    arm_data: bpy.types.Armature,
+    parent_matrix: Matrix,
+    parent_correction_matrix_inv: Matrix,
+    parent_bone: Optional[bpy.types.EditBone],
+    node: NodeChunk,
+    nodes: list[NodeChunk],
+    state: _ImportState,
+):
     # TODO: Scale...
     # Oh, the problem is that scale is all zeroes, but what is about scale_orient :/
     local_matrix = Matrix.LocRotScale(to_blend_vec(node.position), to_blend_quat(node.rotation), None)
@@ -209,13 +240,17 @@ def _import_armature_node(arm_data: bpy.types.Armature, parent_matrix: Matrix, p
         edit_bone.tail = bone_tail
         edit_bone.matrix = bone_matrix
         edit_bone.parent = parent_bone
-        if state.bone_connect and parent_bone is not None \
-                and similar_values_iter(edit_bone.head, parent_bone.tail, epsilon=1e-3):
+        if (
+            state.bone_connect
+            and parent_bone is not None
+            and similar_values_iter(edit_bone.head, parent_bone.tail, epsilon=1e-3)
+        ):
             edit_bone.use_connect = True
     else:
         edit_bone = parent_bone
 
     for child in children:
         _import_armature_node(arm_data, bone_matrix, bone_correction_matrix_inv, edit_bone, child, nodes, state)
+
 
 # TODO: Attach stuff (slots?) to bone, see link_skeleton_children()...

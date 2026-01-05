@@ -20,6 +20,7 @@ class PropertyTypeRegistry:
         if type_name not in cls.property_types:
             if cls.is_property_container(type_name):
                 from .property_container import bTPropertyContainer
+
                 property_type = bTPropertyContainer
             else:
                 raise ValueError(f'Unknown Property: {name} - {type_name}')

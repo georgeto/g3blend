@@ -10,7 +10,7 @@ from ..types import eCColorSrcProxy, eCTexCoordSrcProxy
 class eCColorSrcBase(eCShaderEllementBase):
     def read_post_version(self, reader: BinaryReader) -> None:
         if reader.read_u16() != 1:
-            raise ValueError("Unsupported eCColorSrcBase version.")
+            raise ValueError('Unsupported eCColorSrcBase version.')
 
         super().read_post_version(reader)
 

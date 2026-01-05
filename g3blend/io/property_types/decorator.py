@@ -3,6 +3,7 @@ from typing import Optional
 
 def _process_class(cls, name: Optional[str], aliases: Optional[list[str]]):
     from ..property_types import registry
+
     registry.PropertyTypeRegistry.register(cls, name if name else cls.__name__)
     if aliases:
         for alias in aliases:

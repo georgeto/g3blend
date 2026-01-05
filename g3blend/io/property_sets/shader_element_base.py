@@ -12,7 +12,7 @@ class eCShaderEllementBase(PropertySet):
 
     def read_post_version(self, reader: BinaryReader) -> None:
         if reader.read_u16() != 1:
-            raise ValueError("Unsupported eCShaderEllementBase version.")
+            raise ValueError('Unsupported eCShaderEllementBase version.')
         self.token = reader.read(bCGuid)
         self.editor_layout = reader.read(bCRect)
 

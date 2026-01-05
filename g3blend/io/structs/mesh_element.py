@@ -137,10 +137,12 @@ class eEVertexStreamArrayType(IntEnum):
 
 _vertex_stream_to_struct_map = {
     eEVertexStreamArrayType.Face: eSFVF(eEVertexStreamArrayType.Face, eEVertexTypeStruct.GEU32, 0x0),
-    eEVertexStreamArrayType.VertexPosition: eSFVF(eEVertexStreamArrayType.VertexPosition, eEVertexTypeStruct.bCVector3,
-                                                  0x2),
-    eEVertexStreamArrayType.VertexPositionTransformed: eSFVF(eEVertexStreamArrayType.VertexPositionTransformed,
-                                                             eEVertexTypeStruct.bCVector4, 0x4),
+    eEVertexStreamArrayType.VertexPosition: eSFVF(
+        eEVertexStreamArrayType.VertexPosition, eEVertexTypeStruct.bCVector3, 0x2
+    ),
+    eEVertexStreamArrayType.VertexPositionTransformed: eSFVF(
+        eEVertexStreamArrayType.VertexPositionTransformed, eEVertexTypeStruct.bCVector4, 0x4
+    ),
     eEVertexStreamArrayType.Normal: eSFVF(eEVertexStreamArrayType.Normal, eEVertexTypeStruct.bCVector3, 0x10),
     eEVertexStreamArrayType.Diffuse: eSFVF(eEVertexStreamArrayType.Diffuse, eEVertexTypeStruct.GEU32, 0x40),
     eEVertexStreamArrayType.Specular: eSFVF(eEVertexStreamArrayType.Specular, eEVertexTypeStruct.GEU32, 0x80),
@@ -150,8 +152,9 @@ _vertex_stream_to_struct_map = {
     eEVertexStreamArrayType.XYZB3: eSFVF(eEVertexStreamArrayType.XYZB3, eEVertexTypeStruct.GEFloat, 0x0A),
     eEVertexStreamArrayType.XYZB4: eSFVF(eEVertexStreamArrayType.XYZB4, eEVertexTypeStruct.GEFloat, 0x0C),
     eEVertexStreamArrayType.XYZB5: eSFVF(eEVertexStreamArrayType.XYZB5, eEVertexTypeStruct.GEFloat, 0x0E),
-    eEVertexStreamArrayType.TextureCoordinate: eSFVF(eEVertexStreamArrayType.TextureCoordinate,
-                                                     eEVertexTypeStruct.bCVector2, 0),
+    eEVertexStreamArrayType.TextureCoordinate: eSFVF(
+        eEVertexStreamArrayType.TextureCoordinate, eEVertexTypeStruct.bCVector2, 0
+    ),
     eEVertexStreamArrayType.Unk_13: eSFVF(eEVertexStreamArrayType.Unk_13, eEVertexTypeStruct.bCVector3, 0x10000),
     eEVertexStreamArrayType.Unk_14: eSFVF(eEVertexStreamArrayType.Unk_14, eEVertexTypeStruct.bCVector4, 0x20000),
     eEVertexStreamArrayType.Unk_15: eSFVF(eEVertexStreamArrayType.Unk_15, eEVertexTypeStruct.bCVector2, 0),
@@ -203,8 +206,9 @@ _vertex_stream_to_struct_map = {
     eEVertexStreamArrayType.Unk_61: eSFVF(eEVertexStreamArrayType.Unk_61, eEVertexTypeStruct.bCVector4, 0),
     eEVertexStreamArrayType.Unk_62: eSFVF(eEVertexStreamArrayType.Unk_62, eEVertexTypeStruct.bCVector4, 0),
     eEVertexStreamArrayType.Unk_63: eSFVF(eEVertexStreamArrayType.Unk_63, eEVertexTypeStruct.bCVector4, 0),
-    eEVertexStreamArrayType.TangentVector: eSFVF(eEVertexStreamArrayType.TangentVector, eEVertexTypeStruct.bCVector3,
-                                                 0),
+    eEVertexStreamArrayType.TangentVector: eSFVF(
+        eEVertexStreamArrayType.TangentVector, eEVertexTypeStruct.bCVector3, 0
+    ),
     eEVertexStreamArrayType.Unk_65: eSFVF(eEVertexStreamArrayType.Unk_65, eEVertexTypeStruct.bCVector3, 0),
     eEVertexStreamArrayType.Unk_66: eSFVF(eEVertexStreamArrayType.Unk_66, eEVertexTypeStruct.bCVector3, 0),
     eEVertexStreamArrayType.Unk_67: eSFVF(eEVertexStreamArrayType.Unk_67, eEVertexTypeStruct.bCVector3, 0),
@@ -213,11 +217,12 @@ _vertex_stream_to_struct_map = {
     eEVertexStreamArrayType.Unk_70: eSFVF(eEVertexStreamArrayType.Unk_70, eEVertexTypeStruct.bCVector2, 0),
     eEVertexStreamArrayType.Unk_71: eSFVF(eEVertexStreamArrayType.Unk_71, eEVertexTypeStruct.bCVector2, 0),
     eEVertexStreamArrayType.Unk_72: eSFVF(eEVertexStreamArrayType.Unk_72, eEVertexTypeStruct.bCVector3, 0),
-    eEVertexStreamArrayType.UVLightmapGroups: eSFVF(eEVertexStreamArrayType.UVLightmapGroups,
-                                                    eEVertexTypeStruct.bCVector2, 0),
+    eEVertexStreamArrayType.UVLightmapGroups: eSFVF(
+        eEVertexStreamArrayType.UVLightmapGroups, eEVertexTypeStruct.bCVector2, 0
+    ),
 }
 
-TVetexArrayType = TypeVar("TVetexArrayType")
+TVetexArrayType = TypeVar('TVetexArrayType')
 
 
 @dataclass(slots=True)

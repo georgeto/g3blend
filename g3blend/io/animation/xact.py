@@ -19,7 +19,7 @@ class MaterialReference(BinarySerializable):
         except (ValueError, IndexError):
             # Workaround for broken Rimy3D meshes (they don't have a stringtable, but still
             # refer to stringtable entries here)
-            self.name = ""
+            self.name = ''
 
     def write(self, writer: BinaryWriter) -> None:
         writer.write_u16(self.lod_index)
@@ -41,30 +41,32 @@ class eCWrapper_emfx2Actor(BinarySerializable, ChunkContainer):
 
     def read(self, reader: BinaryReader) -> None:
         if not reader.expect_bytes(self._GENA_MAGIC):
-            raise ValueError("Invalid eCWrapper_emfx2Actor.")
+            raise ValueError('Invalid eCWrapper_emfx2Actor.')
 
         version = reader.read_u16()
         if version != 4:
-            raise ValueError("Version != 4 is not supported.")
+            raise ValueError('Version != 4 is not supported.')
 
         offset_end = reader.read_u32() + reader.position()
         if not reader.expect_bytes(self._FXA_MAGIC):
-            raise ValueError("Invalid eCWrapper_emfx2Actor.")
+            raise ValueError('Invalid eCWrapper_emfx2Actor.')
 
         self.high_version = reader.read_u8()
         self.low_version = reader.read_u8()
 
         if self.high_version != 1 or self.low_version != 1:
-            raise ValueError("Invalid eCWrapper_emfx2Actor.")
+            raise ValueError('Invalid eCWrapper_emfx2Actor.')
 
         self.read_chunks(reader, offset_end)
         self.materials = reader.read_list(MaterialReference)
 
         # Per LoD
         self.ambient_occlusion = reader.read_prefixed_list(
-            read=lambda r: r.read_prefixed_list(read=BinaryReader.read_u32))
-        self.tangent_vertices = [reader.read_list(bCVector, num=len(lod_vertices)) for lod_vertices in
-                                 self.ambient_occlusion]
+            read=lambda r: r.read_prefixed_list(read=BinaryReader.read_u32)
+        )
+        self.tangent_vertices = [
+            reader.read_list(bCVector, num=len(lod_vertices)) for lod_vertices in self.ambient_occlusion
+        ]
 
     def write(self, writer: BinaryWriter) -> None:
         writer.write_bytes(self._GENA_MAGIC)
@@ -78,8 +80,9 @@ class eCWrapper_emfx2Actor(BinarySerializable, ChunkContainer):
         with writer.at_position(size_offset) as pos:
             writer.write_u32(pos - size_offset - 4)
         writer.write_list(self.materials)
-        writer.write_prefixed_list(self.ambient_occlusion,
-                                   lambda w, v: w.write_prefixed_list(v, BinaryWriter.write_u32))
+        writer.write_prefixed_list(
+            self.ambient_occlusion, lambda w, v: w.write_prefixed_list(v, BinaryWriter.write_u32)
+        )
         writer.write_iter(self.tangent_vertices, write=BinaryWriter.write_iter)
 
 
@@ -116,7 +119,7 @@ class ResourceAnimationActor(BinarySerializable):  # eCResourceAnimationActor_PS
     def read(self, reader: BinaryReader) -> None:
         version = reader.read_u16()
         if version != 54:
-            raise ValueError("Version != 54 is not supported.")
+            raise ValueError('Version != 54 is not supported.')
 
         self.resource_size = reader.read_u32()
         self.resource_priority = reader.read_float()

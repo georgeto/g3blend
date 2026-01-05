@@ -18,9 +18,9 @@ class bCDateTime(BinarySerializable):
     # private static final Instant FILETIME_ZERO = Instant.parse("1601-01-01T00:00:00Z");
 
     # public static bCDateTime fromInstant(Instant instant)
-    #	Duration duration = Duration.between(FILETIME_ZERO, instant);
-    #	return new bCDateTime(duration.getSeconds() * 10_000_000 + duration.getNano() / 100);
+    # Duration duration = Duration.between(FILETIME_ZERO, instant);
+    # return new bCDateTime(duration.getSeconds() * 10_000_000 + duration.getNano() / 100);
 
     # public Instant toInstant()
-    #	Duration duration = Duration.of(fileTime / 10, ChronoUnit.MICROS).plus(fileTime % 10 * 100, ChronoUnit.NANOS);
-    #	return FILETIME_ZERO.plus(duration);
+    # Duration duration = Duration.of(fileTime / 10, ChronoUnit.MICROS).plus(fileTime % 10 * 100, ChronoUnit.NANOS);
+    # return FILETIME_ZERO.plus(duration);

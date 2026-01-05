@@ -91,7 +91,7 @@ class UnknownChunk(AbstractChunk):
     chunk_data: bytes
 
     def read(self, reader: BinaryReader) -> None:
-        raise NotImplementedError("No size provided.")
+        raise NotImplementedError('No size provided.')
 
     def read_sized(self, reader: BinaryReader, size: int = None) -> None:
         self.chunk_data = reader.read_bytes(size)
@@ -138,7 +138,7 @@ class Vertex(BinarySerializable):
     uv_sets: list[bCVector2]
 
     def read(self, reader: BinaryReader) -> None:
-        raise NotImplementedError("No size provided.")
+        raise NotImplementedError('No size provided.')
 
     def read_sized(self, reader: BinaryReader, size: int) -> None:
         self.org_vertex = reader.read_u32()
@@ -167,7 +167,7 @@ class Submesh(BinarySerializable):
     indices: list[int]
 
     def read(self, reader: BinaryReader) -> None:
-        raise NotImplementedError("No size provided.")
+        raise NotImplementedError('No size provided.')
 
     def read_sized(self, reader: BinaryReader, override_num_uv_sets: int) -> None:
         self.mat_id = reader.read_u8()
@@ -256,7 +256,7 @@ class SkinningInfoChunk(AbstractChunk):
     influences: list[list[SkinInfluence]]
 
     def read(self, reader: BinaryReader) -> None:
-        raise NotImplementedError("No size provided.")
+        raise NotImplementedError('No size provided.')
 
     def read_sized(self, reader: BinaryReader, size: int) -> None:
         chunk_end_offset = reader.position() + size
@@ -317,6 +317,7 @@ class QuaternionKeyFrame(KeyFrame[bCQuaternion]):
 
 class KeyFrameChunk(AbstractChunk):
     """A key frame chunk applies to the most recent motion part chunk."""
+
     ID = LMA_CHUNK.LMA_CHUNK_ANIM
     VERSION = 1
 
@@ -464,7 +465,7 @@ def get_chunk_type(chunk_id: int, version: int):
         case _:
             return UnknownChunk
 
-    raise ValueError(f"ChunkID {chunk_id} with version {version} is not supported.")
+    raise ValueError(f'ChunkID {chunk_id} with version {version} is not supported.')
 
 
 class ChunkContainer:

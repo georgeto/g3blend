@@ -16,8 +16,9 @@ from .io.types.quaternion import bCQuaternion
 T = TypeVar('T')
 
 
-def read_genome_file(file: Path, content_type: Type[TBinarySerializable],
-                     allow_fallback: bool = False) -> TBinarySerializable:
+def read_genome_file(
+    file: Path, content_type: Type[TBinarySerializable], allow_fallback: bool = False
+) -> TBinarySerializable:
     return genome_file.read(BinaryReader(Path(file)), content_type, allow_fallback)
 
 
@@ -87,9 +88,9 @@ def without_scale(matrix: Matrix) -> Matrix:
     return Matrix.LocRotScale(matrix.to_translation(), matrix.to_quaternion(), None)
 
 
-def calc_arm_root_transformation(arm_matrix_base: Matrix, global_scale: float, global_matrix: Matrix,
-                                 ignore_transform: bool) -> \
-        tuple[float | Vector, Matrix]:
+def calc_arm_root_transformation(
+    arm_matrix_base: Matrix, global_scale: float, global_matrix: Matrix, ignore_transform: bool
+) -> tuple[float | Vector, Matrix]:
     # If the armature transform is identity (e.g. baked) ignore, does not make a difference.
     if not ignore_transform:
         # TODO: Do we care if arm_obj itself is a child of something that has transformation?
@@ -135,8 +136,9 @@ def find_armature(context: bpy.types.Context) -> Optional[bpy.types.Object]:
 # Reset the current scene
 def reset_scene():
     import bpy
+
     # Remove scenes
-    empty_scn = bpy.data.scenes.new("Scene")
+    empty_scn = bpy.data.scenes.new('Scene')
     for i in range(len(bpy.data.scenes) - 1, -1, -1):
         scn = bpy.data.scenes[i]
         if scn != empty_scn:
@@ -200,12 +202,11 @@ try:
     from bpy_extras.anim_utils import action_ensure_channelbag_for_slot
     from bpy_extras.anim_utils import action_get_channelbag_for_slot
 
-
-    def action_new_fcurve(action: Action, action_slot: 'bpy.types.ActionSlot', data_path: str, index: int,
-                          group_name) -> FCurve:
+    def action_new_fcurve(
+        action: Action, action_slot: 'bpy.types.ActionSlot', data_path: str, index: int, group_name
+    ) -> FCurve:
         channelbag = action_ensure_channelbag_for_slot(action, action_slot)
         return channelbag.fcurves.new(data_path, index=index, group_name=group_name)
-
 
     def action_get_fcurves(action: Action, action_slot: 'bpy.types.ActionSlot') -> Iterable[FCurve]:
         if channelbag := action_get_channelbag_for_slot(action, action_slot):
@@ -215,10 +216,8 @@ try:
 
 except ImportError:
     # For older versions fall back to the legacy API.
-    def action_new_fcurve(action: Action, _: 'bpy.types.ActionSlot', data_path: str, index: int,
-                          group_name) -> FCurve:
+    def action_new_fcurve(action: Action, _: 'bpy.types.ActionSlot', data_path: str, index: int, group_name) -> FCurve:
         return action.fcurves.new(data_path, index=index, action_group=group_name)
-
 
     def action_get_fcurves(action: Action, _: 'bpy.types.ActionSlot') -> Iterable[FCurve]:
         return action.fcurves

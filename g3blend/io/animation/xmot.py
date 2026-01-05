@@ -27,7 +27,7 @@ class eCWrapper_emfx2Motion(BinarySerializable, ChunkContainer):
     def read(self, reader: BinaryReader) -> None:
         offset_end = reader.read_u32() + reader.position()
         if not reader.expect_bytes(self._LMA_MAGIC):
-            raise ValueError("Invalid eCWrapper_emfx2Motion.")
+            raise ValueError('Invalid eCWrapper_emfx2Motion.')
 
         # high version (2 in case of v2.34)
         high_version = reader.read_u8()
@@ -35,11 +35,11 @@ class eCWrapper_emfx2Motion(BinarySerializable, ChunkContainer):
         low_version = reader.read_u8()
 
         if high_version != self._HIGH_VERSION or low_version != self._LOW_VERSION:
-            raise ValueError("Invalid eCWrapper_emfx2Motion.")
+            raise ValueError('Invalid eCWrapper_emfx2Motion.')
 
         # is this an actor? (if false, it's a motion)
         if reader.read_bool():
-            raise ValueError("Invalid eCWrapper_emfx2Motion.")
+            raise ValueError('Invalid eCWrapper_emfx2Motion.')
 
         self.read_chunks(reader, offset_end)
 

@@ -7,11 +7,27 @@ from mathutils import Matrix
 
 from .. import log as logging
 from ..extension import initialize_g3blend_ext
-from ..io.animation.chunks import AnimationType, InterpolationType, KeyFrame, KeyFrameChunk, MotionPartChunk, \
-    QuaternionKeyFrame, VectorKeyFrame
+from ..io.animation.chunks import (
+    AnimationType,
+    InterpolationType,
+    KeyFrame,
+    KeyFrameChunk,
+    MotionPartChunk,
+    QuaternionKeyFrame,
+    VectorKeyFrame,
+)
 from ..io.animation.xmot import ResourceAnimationMotion as Xmot
-from ..util import action_new_fcurve, bone_correction_matrix, bone_correction_matrix_inv, calc_arm_root_transformation, \
-    ceil_safe, read_genome_file, to_blend_quat, to_blend_vec, trunc_safe
+from ..util import (
+    action_new_fcurve,
+    bone_correction_matrix,
+    bone_correction_matrix_inv,
+    calc_arm_root_transformation,
+    ceil_safe,
+    read_genome_file,
+    to_blend_quat,
+    to_blend_vec,
+    trunc_safe,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -85,12 +101,15 @@ def _group_motion_parts(xmot: Xmot) -> list[tuple[MotionPartChunk, list[KeyFrame
     return motion_parts
 
 
-def _import_motion_part(chunk: MotionPartChunk, pose_bone: bpy.types.PoseBone, state: _ImportState) \
-        -> tuple[Matrix, Matrix]:
+def _import_motion_part(
+    chunk: MotionPartChunk, pose_bone: bpy.types.PoseBone, state: _ImportState
+) -> tuple[Matrix, Matrix]:
     # This should be the rest matrix (local to parent).
-    motion_part_pose_matrix = Matrix.LocRotScale(to_blend_vec(chunk.pose_position) * state.root_scale,
-                                                 to_blend_quat(chunk.pose_rotation),
-                                                 to_blend_vec(chunk.pose_scale))
+    motion_part_pose_matrix = Matrix.LocRotScale(
+        to_blend_vec(chunk.pose_position) * state.root_scale,
+        to_blend_quat(chunk.pose_rotation),
+        to_blend_vec(chunk.pose_scale),
+    )
 
     bone = pose_bone.bone
     # Rest matrices in xact and pose matrices in the xmot are always relative to the parent bone.
@@ -119,27 +138,37 @@ def _import_motion_part(chunk: MotionPartChunk, pose_bone: bpy.types.PoseBone, s
     return pre_matrix, post_matrix
 
 
-def _import_key_frames(animation_type: AnimationType, interpolation_type: InterpolationType, frames: list[KeyFrame],
-                       pose_bone: bpy.types.PoseBone, pre_matrix: Matrix, post_matrix: Matrix, state: _ImportState,
-                       synthesized: bool):
+def _import_key_frames(
+    animation_type: AnimationType,
+    interpolation_type: InterpolationType,
+    frames: list[KeyFrame],
+    pose_bone: bpy.types.PoseBone,
+    pre_matrix: Matrix,
+    post_matrix: Matrix,
+    state: _ImportState,
+    synthesized: bool,
+):
     match animation_type:
         # Position
         case AnimationType.Position:
             curve_path = 'location'
-            value_extract = lambda v: (pre_matrix @ Matrix.Translation(
-                to_blend_vec(v) * state.root_scale) @ post_matrix).to_translation()
+            value_extract = lambda v: (
+                pre_matrix @ Matrix.Translation(to_blend_vec(v) * state.root_scale) @ post_matrix
+            ).to_translation()
             num_channels = 3
         # Rotation
         case AnimationType.Rotation:
             curve_path = 'rotation_quaternion'
-            value_extract = lambda v: (
-                    pre_matrix @ to_blend_quat(v).to_matrix().to_4x4() @ post_matrix).to_quaternion()
+            value_extract = lambda v: (pre_matrix @ to_blend_quat(v).to_matrix().to_4x4() @ post_matrix).to_quaternion()
             num_channels = 4
         # Scaling
         case AnimationType.Scaling:
             curve_path = 'scale'
-            value_extract = lambda v: (pre_matrix @ Matrix.LocRotScale(None, None, to_blend_vec(
-                v)) @ post_matrix).to_scale().to_3d()
+            value_extract = (
+                lambda v: (pre_matrix @ Matrix.LocRotScale(None, None, to_blend_vec(v)) @ post_matrix)
+                .to_scale()
+                .to_3d()
+            )
             num_channels = 3
         case _:
             raise ValueError(f'Unsupported animation type: {animation_type}')
@@ -155,8 +184,10 @@ def _import_key_frames(animation_type: AnimationType, interpolation_type: Interp
             raise ValueError(f'Unsupported interpolation type: {interpolation_type}')
 
     prop = pose_bone.path_from_id(curve_path)
-    curves = [action_new_fcurve(state.action, state.action_slot, prop, index=channel, group_name=pose_bone.name)
-              for channel in range(num_channels)]
+    curves = [
+        action_new_fcurve(state.action, state.action_slot, prop, index=channel, group_name=pose_bone.name)
+        for channel in range(num_channels)
+    ]
 
     # TODO: Cycle vs. Extrapolation
     # Pre-allocate all keyframes
@@ -182,13 +213,19 @@ def _import_key_frames(animation_type: AnimationType, interpolation_type: Interp
         curve.update()
 
 
-def load_xmot(context: bpy.types.Context, filepath: Path, arm_obj: bpy.types.Object, global_scale: float,
-              global_matrix: Matrix, ignore_transform: bool):
+def load_xmot(
+    context: bpy.types.Context,
+    filepath: Path,
+    arm_obj: bpy.types.Object,
+    global_scale: float,
+    global_matrix: Matrix,
+    ignore_transform: bool,
+):
     name = filepath.stem
     xmot = read_genome_file(filepath, Xmot)
 
     if arm_obj is None:
-        raise ValueError("No target armature was selected.")
+        raise ValueError('No target armature was selected.')
 
     fps = _detect_frame_time(xmot)
 
@@ -216,8 +253,9 @@ def load_xmot(context: bpy.types.Context, filepath: Path, arm_obj: bpy.types.Obj
         frame_effect.key_frame = f.key_frame
         frame_effect.effect_name = f.effect_name
 
-    root_scale, root_matrix_no_scale = calc_arm_root_transformation(arm_obj.matrix_basis, global_scale,
-                                                                    global_matrix, ignore_transform)
+    root_scale, root_matrix_no_scale = calc_arm_root_transformation(
+        arm_obj.matrix_basis, global_scale, global_matrix, ignore_transform
+    )
 
     state = _ImportState(arm_obj, action, action_slot, fps, root_scale, root_matrix_no_scale)
 
@@ -229,21 +267,43 @@ def load_xmot(context: bpy.types.Context, filepath: Path, arm_obj: bpy.types.Obj
         pose_bone = arm_obj.pose.bones[motion_part.name]
         pre_matrix, post_matrix = _import_motion_part(motion_part, pose_bone, state)
         for key_frame_chunk in key_frames:
-            _import_key_frames(key_frame_chunk.animation_type, key_frame_chunk.interpolation_type,
-                               key_frame_chunk.frames, pose_bone, pre_matrix, post_matrix, state, synthesized=False)
+            _import_key_frames(
+                key_frame_chunk.animation_type,
+                key_frame_chunk.interpolation_type,
+                key_frame_chunk.frames,
+                pose_bone,
+                pre_matrix,
+                post_matrix,
+                state,
+                synthesized=False,
+            )
 
         # If the pose position/rotation/scale (separately) of a bone is constant across the entire animation,
         # there is no key frame chunk for this property. To retain the pose of such a motion part, we have to
         # synthesize a key frame for it (on export we filter out these constant key frames again).
         if not any(f.animation_type == AnimationType.Position for f in key_frames):
-            _import_key_frames(AnimationType.Position, InterpolationType.Linear,
-                               [VectorKeyFrame(0.0, motion_part.pose_position)],
-                               pose_bone, pre_matrix, post_matrix, state, synthesized=True)
+            _import_key_frames(
+                AnimationType.Position,
+                InterpolationType.Linear,
+                [VectorKeyFrame(0.0, motion_part.pose_position)],
+                pose_bone,
+                pre_matrix,
+                post_matrix,
+                state,
+                synthesized=True,
+            )
 
         if not any(f.animation_type == AnimationType.Rotation for f in key_frames):
-            _import_key_frames(AnimationType.Rotation, InterpolationType.Linear,
-                               [QuaternionKeyFrame(0.0, motion_part.pose_rotation)],
-                               pose_bone, pre_matrix, post_matrix, state, synthesized=True)
+            _import_key_frames(
+                AnimationType.Rotation,
+                InterpolationType.Linear,
+                [QuaternionKeyFrame(0.0, motion_part.pose_rotation)],
+                pose_bone,
+                pre_matrix,
+                post_matrix,
+                state,
+                synthesized=True,
+            )
 
     if state.min_frame_time is not None:
         context.scene.frame_start = trunc_safe(state.min_frame_time * fps)

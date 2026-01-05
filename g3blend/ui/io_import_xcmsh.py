@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 class ImportXcmsh(bpy.types.Operator, ImportHelper, AxisHelper):
     """Import from xcmsh file format (.xcmsh)"""
+
     bl_idname = 'g3blend.io_import_xcmsh'
     bl_label = 'Import Mesh (xcmsh)'
     bl_options = {'UNDO', 'PRESET'}
@@ -22,9 +23,7 @@ class ImportXcmsh(bpy.types.Operator, ImportHelper, AxisHelper):
     filter_glob: StringProperty(default='*.xcmsh', options={'HIDDEN'})
 
     reset_scene: BoolProperty(
-        name='Reset Scene',
-        description='Remove everything from scene before import',
-        default=False,
+        name='Reset Scene', description='Remove everything from scene before import', default=False
     )
 
     mesh_name: StringProperty(
@@ -34,8 +33,8 @@ class ImportXcmsh(bpy.types.Operator, ImportHelper, AxisHelper):
 
     bake_transform: BoolProperty(
         name='Bake Transform',
-        description="Bake space transform into object data, avoids getting unwanted rotations and "
-                    "scale to objects because Gothic 3 space is not aligned with Blender's space",
+        description='Bake space transform into object data, avoids getting unwanted rotations and '
+        "scale to objects because Gothic 3 space is not aligned with Blender's space",
         default=True,
     )
 
@@ -75,8 +74,4 @@ class G3BLEND_PT_import_xcmsh_misc(AbstractFilePanel):
         layout.prop(operator, 'mesh_name')
 
 
-classes = (
-    ImportXcmsh,
-    G3BLEND_PT_import_xcmsh_transform,
-    G3BLEND_PT_import_xcmsh_misc,
-)
+classes = (ImportXcmsh, G3BLEND_PT_import_xcmsh_transform, G3BLEND_PT_import_xcmsh_misc)

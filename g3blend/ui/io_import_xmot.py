@@ -4,8 +4,13 @@ import bpy
 from bpy.props import BoolProperty, CollectionProperty, EnumProperty, IntProperty, StringProperty
 from bpy_extras.io_utils import ImportHelper
 
-from .helper import AbstractFilePanel, AbstractFileTransformPanel, AxisHelper, get_object_for_armature_item, \
-    get_target_armature_list_items
+from .helper import (
+    AbstractFilePanel,
+    AbstractFileTransformPanel,
+    AxisHelper,
+    get_object_for_armature_item,
+    get_target_armature_list_items,
+)
 from .. import log as logging
 from ..operators.io_import_xmot import load_xmot
 
@@ -14,28 +19,22 @@ logger = logging.getLogger(__name__)
 
 class ImportXmot(bpy.types.Operator, ImportHelper, AxisHelper):
     """Import from xmot file format (.xmot)"""
+
     bl_idname = 'g3blend.io_import_xmot'
     bl_label = 'Import Motion (xmot)'
     bl_options = {'UNDO', 'PRESET'}
 
-    directory: StringProperty(
-        subtype='DIR_PATH',
-        options={'HIDDEN', 'SKIP_PRESET'},
-    )
+    directory: StringProperty(subtype='DIR_PATH', options={'HIDDEN', 'SKIP_PRESET'})
 
     filename_ext = '.xmot'
     filter_glob: StringProperty(default='*.xmot', options={'HIDDEN'})
 
     files: CollectionProperty(
-        name='File Path',
-        type=bpy.types.OperatorFileListElement,
-        options={'HIDDEN', 'SKIP_PRESET'},
+        name='File Path', type=bpy.types.OperatorFileListElement, options={'HIDDEN', 'SKIP_PRESET'}
     )
 
     ignore_transform: BoolProperty(
-        name='Ignore Transform',
-        description='Ignore transform set on the armature object',
-        default=False,
+        name='Ignore Transform', description='Ignore transform set on the armature object', default=False
     )
 
     target_armature_index: IntProperty()
@@ -68,8 +67,9 @@ class ImportXmot(bpy.types.Operator, ImportHelper, AxisHelper):
                     filepath = directory / f.name
                     load_xmot(context, filepath, target_armature, global_scale, global_matrix, self.ignore_transform)
             else:
-                load_xmot(context, Path(self.filepath), target_armature, global_scale, global_matrix,
-                          self.ignore_transform)
+                load_xmot(
+                    context, Path(self.filepath), target_armature, global_scale, global_matrix, self.ignore_transform
+                )
 
             self.target_armature_index = 0
         except Exception as e:
@@ -96,8 +96,4 @@ class G3BLEND_PT_import_xmot_transform(AbstractFileTransformPanel):
         self.draw_transform(layout, operator)
 
 
-classes = (
-    ImportXmot,
-    G3BLEND_PT_import_xmot_import,
-    G3BLEND_PT_import_xmot_transform,
-)
+classes = (ImportXmot, G3BLEND_PT_import_xmot_import, G3BLEND_PT_import_xmot_transform)
