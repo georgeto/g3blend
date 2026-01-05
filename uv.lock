@@ -1,0 +1,27 @@
+version = 1
+revision = 3
+requires-python = ">=3.10"
+
+[[package]]
+name = "fake-bpy-module-latest"
+version = "20251003"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/8e/9c/573a05ef91824597b779a2098a4a8515f71f2aaf56bcb32243a3358f5a6c/fake_bpy_module_latest-20251003.tar.gz", hash = "sha256:42bb38384e22342bc912f3bca9b4c5b849d7d7cd269b2e523a9dd7f4e90e9943", size = 973875, upload-time = "2025-10-03T06:19:52.618Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0a/9a/1b8172f0a9a4f8f4459bc1dbdbf0e6251c9db8e8fcc531645bae25cf7e81/fake_bpy_module_latest-20251003-py3-none-any.whl", hash = "sha256:80cc91d5a254cdf0e4c16258de18ffa34988f9102daa4b244e1fe3e8a2f6c246", size = 1103075, upload-time = "2025-10-03T06:19:49.751Z" },
+]
+
+[[package]]
+name = "g3blend"
+version = "0.3.2"
+source = { virtual = "." }
+
+[package.dev-dependencies]
+dev = [
+    { name = "fake-bpy-module-latest" },
+]
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [{ name = "fake-bpy-module-latest", specifier = ">=20251003" }]

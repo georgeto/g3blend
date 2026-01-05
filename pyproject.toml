@@ -1,0 +1,11 @@
+[project]
+name = "g3blend"
+version = "0.3.2"
+description = "Gothic 3 Import/Export meshes, materials, textures, animations"
+readme = "README.md"
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = [
+    "fake-bpy-module-latest>=20251003",
+]
