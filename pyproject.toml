@@ -8,4 +8,52 @@ requires-python = ">=3.10"
 [dependency-groups]
 dev = [
     "fake-bpy-module-latest>=20251003",
+    "ruff>=0.14.10",
 ]
+
+[tool.ruff]
+src = ["g3blend"]
+line-length = 120
+
+[tool.ruff.format]
+quote-style = "single"
+# Always use \n as line ending.
+line-ending = "lf"
+skip-magic-trailing-comma = true
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "ANN", # Mypy is better at this
+    "C901", # sometimes you trade complexity for performance
+    "COM", # Formatter takes care of our commas
+    "D10", # We prefer our own docstring style.
+    "D203", # We want no blank line before docstring.
+    "D205", # We are lax about docstrings for now.
+    "D212",
+    "EM", # strings are fine
+    "N801", # We use original names for Gothic 3 classes
+    "FBT", # bools are our friends
+    "FIX", # Yes, we want TODO as a marker.
+    "PERF403", # false positives
+    "PLE1205", # we have custom log implementation
+    "PLR0912", # leave complexity to me
+    "PLR0913", # leave complexity to me
+    "PLR2004", # numbers are sometimes fine
+    "Q000", # formatter takes care
+    "S101", # asserts are fine (for now)
+    "T201", # prints are fine (for now)
+    "TD", # we don't follow other people's todo style
+    "TID252", # Blender mandates relative imports
+    "TRY003", # simple strings are fine
+    "UP045", # prefer Optional
+]
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "single"
+
+[tool.ruff.lint.isort]
+known-first-party = ["g3blend"]
+lines-between-types = 1
+lines-after-imports = 2
+split-on-trailing-comma = false
