@@ -138,7 +138,7 @@ def save_xmot(
             continue
 
         # Filter by keyframes.
-        if with_keysframes and not any(True for bone_name, _ in frames_per_bone.keys() if bone_name == pose_bone.name):
+        if with_keysframes and not any(True for bone_name, _ in frames_per_bone if bone_name == pose_bone.name):
             continue
 
         if filter_slots and pose_bone.name.startswith('Slot_') and pose_bone.name not in COMMONLY_USED_SLOTS:

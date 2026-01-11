@@ -337,7 +337,7 @@ class BinaryWriter:
 
         self.write_bool(True)
         self.write_u32(len(self._stringtable))
-        for entry in self._stringtable.keys():
+        for entry in self._stringtable:
             self.write_str_u16(entry)
 
     @contextmanager
