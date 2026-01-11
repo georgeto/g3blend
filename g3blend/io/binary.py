@@ -12,7 +12,7 @@ class BinarySerializable(ABC):
     def read(self, reader: 'BinaryReader') -> None:
         pass
 
-    def read_sized(self, reader: 'BinaryReader', size: int) -> None:
+    def read_sized(self, reader: 'BinaryReader', _size: int) -> None:
         self.read(reader)
 
     @abstractmethod
@@ -174,7 +174,7 @@ class BinaryReader:
         self._stringtable = []
         # Stringtable enabled?
         if self.read_bool():
-            for i in range(self.read_u32()):
+            for _ in range(self.read_u32()):
                 self._stringtable.append(self.read_str(self.read_u16()))
 
     @contextmanager

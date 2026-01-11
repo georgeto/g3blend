@@ -74,12 +74,12 @@ def migrate_all(context: bpy.types.Context):
 
 
 @persistent
-def _load_post(dummy):
+def _load_post(_dummy):
     migrate_all(bpy.context)
 
 
 @persistent
-def _save_pre(dummy):
+def _save_pre(_dummy):
     migrate_all(bpy.context)
 
 

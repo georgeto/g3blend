@@ -86,14 +86,14 @@ class G3BLEND_PT_import_xmot_import(AbstractFilePanel):
     TARGET_OPERATOR = ImportXmot
     bl_label = 'Import'
 
-    def _draw(self, context: bpy.types.Context, layout: bpy.types.UILayout, operator: bpy.types.Operator):
+    def _draw(self, _context: bpy.types.Context, layout: bpy.types.UILayout, operator: bpy.types.Operator):
         layout.prop(operator, 'target_armature')
 
 
 class G3BLEND_PT_import_xmot_transform(AbstractFileTransformPanel):
     TARGET_OPERATOR = ImportXmot
 
-    def _draw(self, context: bpy.types.Context, layout: bpy.types.UILayout, operator: bpy.types.Operator):
+    def _draw(self, _context: bpy.types.Context, layout: bpy.types.UILayout, operator: bpy.types.Operator):
         layout.prop(operator, 'ignore_transform')
         self.draw_transform(layout, operator)
 

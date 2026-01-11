@@ -17,12 +17,12 @@ bl_info = {
 }
 
 
-def menu_func_export(self, context):
+def menu_func_export(self, _context):
     self.layout.operator(ui.io_export_xact.ExportXact.bl_idname, text='Gothic 3 Actor (.xact)')
     self.layout.operator(ui.io_export_xmot.ExportXmot.bl_idname, text='Gothic 3 Motion (.xmot)')
 
 
-def menu_func_import(self, context):
+def menu_func_import(self, _context):
     self.layout.operator(ui.io_import_xact.ImportXact.bl_idname, text='Gothic 3 Actor (.xact)')
     self.layout.operator(ui.io_import_xmot.ImportXmot.bl_idname, text='Gothic 3 Motion (.xmot)')
     self.layout.operator(ui.io_import_xcmsh.ImportXcmsh.bl_idname, text='Gothic 3 Mesh (.xcmsh)')

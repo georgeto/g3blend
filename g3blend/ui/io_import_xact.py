@@ -60,7 +60,7 @@ class ImportXact(bpy.types.Operator, ImportHelper, AxisHelper):
         default=True,
     )
 
-    def draw(self, context):
+    def draw(self, _context):
         pass
 
     def execute(self, context):
@@ -92,7 +92,7 @@ class ImportXact(bpy.types.Operator, ImportHelper, AxisHelper):
 class G3BLEND_PT_import_xact_transform(AbstractFileTransformPanel):
     TARGET_OPERATOR = ImportXact
 
-    def _draw(self, context: bpy.types.Context, layout: bpy.types.UILayout, operator: bpy.types.Operator):
+    def _draw(self, _context: bpy.types.Context, layout: bpy.types.UILayout, operator: bpy.types.Operator):
         layout.prop(operator, 'bake_transform')
         self.draw_transform(layout, operator)
 
@@ -101,7 +101,7 @@ class G3BLEND_PT_import_xact_armature(AbstractFilePanel):
     TARGET_OPERATOR = ImportXact
     bl_label = 'Armature'
 
-    def _draw(self, context, layout: bpy.types.UILayout, operator: bpy.types.Operator):
+    def _draw(self, _context: bpy.types.Context, layout: bpy.types.UILayout, operator: bpy.types.Operator):
         (layout.prop(operator, 'bone_connect'),)
         col = layout.column(heading='Show')
         col.prop(operator, 'show_bone_names', text='Bone Names')
@@ -112,7 +112,7 @@ class G3BLEND_PT_import_xact_misc(AbstractFilePanel):
     TARGET_OPERATOR = ImportXact
     bl_label = 'Misc'
 
-    def _draw(self, context: bpy.types.Context, layout: bpy.types.UILayout, operator: bpy.types.Operator):
+    def _draw(self, _context: bpy.types.Context, layout: bpy.types.UILayout, operator: bpy.types.Operator):
         layout.prop(operator, 'reset_scene')
         layout.prop(operator, 'actor_name')
 

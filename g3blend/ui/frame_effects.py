@@ -6,7 +6,7 @@ from ..extension import defer_migrate
 class G3BLEND_UL_FrameEffect_List(UIList):
     bl_idname = 'G3BLEND_UL_FrameEffect_List'
 
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+    def draw_item(self, _context, layout, _data, item, _icon, _active_data, _active_propname, _index):
         frame_col = layout.column()
         frame_col.prop(item, 'key_frame', text='', emboss=False)
         frame_col.scale_x = 0.3

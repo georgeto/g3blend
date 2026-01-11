@@ -54,7 +54,7 @@ class _ImportState:
             self.max_frame_time = frame_time
 
 
-def _detect_frame_time(xmot: Xmot):
+def _detect_frame_time(_xmot: Xmot):
     # TODO: ...
     return 25
     """

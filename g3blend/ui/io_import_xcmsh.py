@@ -62,7 +62,7 @@ class ImportXcmsh(bpy.types.Operator, ImportHelper, AxisHelper):
 class G3BLEND_PT_import_xcmsh_transform(AbstractFileTransformPanel):
     TARGET_OPERATOR = ImportXcmsh
 
-    def _draw(self, context: bpy.types.Context, layout: bpy.types.UILayout, operator: bpy.types.Operator):
+    def _draw(self, _context: bpy.types.Context, layout: bpy.types.UILayout, operator: bpy.types.Operator):
         layout.prop(operator, 'bake_transform')
         self.draw_transform(layout, operator)
 
@@ -71,7 +71,7 @@ class G3BLEND_PT_import_xcmsh_misc(AbstractFilePanel):
     TARGET_OPERATOR = ImportXcmsh
     bl_label = 'Misc'
 
-    def _draw(self, context: bpy.types.Context, layout: bpy.types.UILayout, operator: bpy.types.Operator):
+    def _draw(self, _context: bpy.types.Context, layout: bpy.types.UILayout, operator: bpy.types.Operator):
         layout.prop(operator, 'reset_scene')
         layout.prop(operator, 'mesh_name')
 

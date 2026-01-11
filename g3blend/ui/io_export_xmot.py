@@ -89,7 +89,7 @@ class ExportXmot(bpy.types.Operator, ExportHelper, AxisHelper):
         name='Ignore Transform', description='Ignore transform set on the armature object', default=False
     )
 
-    def draw(self, context):
+    def draw(self, _context):
         pass
 
     def execute(self, context):
@@ -129,7 +129,7 @@ class G3BLEND_PT_export_xmot_export(AbstractFilePanel):
 class G3BLEND_PT_export_xmot_transform(AbstractFileTransformPanel):
     TARGET_OPERATOR = ExportXmot
 
-    def _draw(self, context: bpy.types.Context, layout: bpy.types.UILayout, operator: bpy.types.Operator):
+    def _draw(self, _context: bpy.types.Context, layout: bpy.types.UILayout, operator: bpy.types.Operator):
         layout.prop(operator, 'ignore_transform')
         self.draw_transform(layout, operator)
 
