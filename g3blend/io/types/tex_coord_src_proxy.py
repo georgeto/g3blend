@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-from .guid import bCGuid
 from ..binary import BinaryReader, BinarySerializable, BinaryWriter
+from .guid import bCGuid
 
 
 @dataclass(slots=True)

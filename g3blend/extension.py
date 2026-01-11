@@ -1,6 +1,7 @@
 import functools
 
 import bpy
+
 from bpy.app.handlers import persistent
 from bpy.props import CollectionProperty, IntProperty, IntVectorProperty, PointerProperty
 from bpy.types import Action, PropertyGroup

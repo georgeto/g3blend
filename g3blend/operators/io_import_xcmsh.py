@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Optional
 
 import bpy
+
 from mathutils import Matrix
 
 from .. import log as logging
@@ -11,6 +12,7 @@ from ..io.property_types import bCVector, bCVector2
 from ..io.structs import eCMeshElement
 from ..io.structs.mesh_element import eEVertexStreamArrayType
 from ..util import read_genome_file, to_blend_vec2_tuple, to_blend_vec_tuple, to_blend_vec_tuple_transform
+
 
 logger = logging.getLogger(__name__)
 

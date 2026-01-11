@@ -1,5 +1,6 @@
 from typing import Type, TypeVar
 
+
 TPropertyType = TypeVar('TPropertyType', bound='BinarySerializable')
 
 

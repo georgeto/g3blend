@@ -2,6 +2,7 @@ from .. import log as logging
 from ..io.animation.xact import ResourceAnimationActor as Xact
 from ..io.property_types.date_time import bCDateTime
 
+
 logger = logging.getLogger(__name__)
 
 

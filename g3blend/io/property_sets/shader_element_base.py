@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 
-from .property_set import PropertySet
 from ..binary import BinaryReader, BinaryWriter
 from ..types import bCGuid, bCRect
+from .property_set import PropertySet
 
 
 @dataclass(slots=True)

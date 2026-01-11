@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 
-from .decorator import property_type
 from ..binary import BinaryReader, BinaryWriter
 from ..types import FloatColor
+from .decorator import property_type
 
 
 @property_type

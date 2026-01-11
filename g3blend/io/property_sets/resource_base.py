@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 
+from ..binary import BinaryReader, BinaryWriter
 from .decorator import property_set
 from .property_set import PropertySet
-from ..binary import BinaryReader, BinaryWriter
 
 
 @property_set

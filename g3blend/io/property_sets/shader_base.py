@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from typing import Optional
 
+from ..binary import BinaryReader, BinaryWriter
+from ..types import bCGuid
 from .property_set import PropertySet
 from .shader_element_base import eCShaderEllementBase
 from .util import read_property_set, write_property_set
-from ..binary import BinaryReader, BinaryWriter
-from ..types import bCGuid
 
 
 @dataclass

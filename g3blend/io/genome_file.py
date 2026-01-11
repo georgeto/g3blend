@@ -4,6 +4,7 @@ from .binary import BinaryReader, BinaryWriter, TBinarySerializable
 from .property_sets.property_set import PropertySet
 from .property_sets.util import read_property_set, write_property_set
 
+
 _GENOME_MAGIC = b'\x47\x45\x4e\x4f\x4d\x46\x4c\x45'
 _DEADBEEF = b'\xef\xbe\xad\xde'
 _VERSION = 1

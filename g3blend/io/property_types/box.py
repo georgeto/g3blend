@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 
+from ..binary import BinaryReader, BinarySerializable, BinaryWriter
 from .decorator import property_type
 from .vector import bCVector
-from ..binary import BinaryReader, BinarySerializable, BinaryWriter
 
 
 @property_type

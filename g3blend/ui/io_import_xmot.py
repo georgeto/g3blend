@@ -1,9 +1,12 @@
 from pathlib import Path
 
 import bpy
+
 from bpy.props import BoolProperty, CollectionProperty, EnumProperty, IntProperty, StringProperty
 from bpy_extras.io_utils import ImportHelper
 
+from .. import log as logging
+from ..operators.io_import_xmot import load_xmot
 from .helper import (
     AbstractFilePanel,
     AbstractFileTransformPanel,
@@ -11,8 +14,7 @@ from .helper import (
     get_object_for_armature_item,
     get_target_armature_list_items,
 )
-from .. import log as logging
-from ..operators.io_import_xmot import load_xmot
+
 
 logger = logging.getLogger(__name__)
 

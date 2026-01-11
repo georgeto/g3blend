@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 import bpy
+
 from mathutils import Matrix, Quaternion, Vector
 
 from .. import log as logging
@@ -15,7 +16,8 @@ from ..io.animation.chunks import (
     QuaternionKeyFrame,
     VectorKeyFrame,
 )
-from ..io.animation.xmot import ResourceAnimationMotion as Xmot, eCWrapper_emfx2Motion, eSFrameEffect
+from ..io.animation.xmot import ResourceAnimationMotion as Xmot
+from ..io.animation.xmot import eCWrapper_emfx2Motion, eSFrameEffect
 from ..io.property_types import bCDateTime
 from ..util import (
     _from_blend_quat,
@@ -25,6 +27,7 @@ from ..util import (
     calc_arm_root_transformation,
     write_genome_file,
 )
+
 
 logger = logging.getLogger(__name__)
 

@@ -1,8 +1,10 @@
 import math
+
 from pathlib import Path
 from typing import Iterable, Optional, Type, TypeVar
 
 import bpy
+
 from bpy.types import Action, FCurve
 from bpy_extras.io_utils import axis_conversion
 from mathutils import Matrix, Quaternion, Vector
@@ -12,6 +14,7 @@ from .io.binary import BinaryReader, BinaryWriter, TBinarySerializable
 from .io.property_types.vector import bCVector
 from .io.property_types.vector2 import bCVector2
 from .io.types.quaternion import bCQuaternion
+
 
 T = TypeVar('T')
 
@@ -199,8 +202,7 @@ def units_blender_to_g3_factor(scene):
 try:
     # Starting with Blender 5.0 the legacy Action API was dropped, but fortunately helper functions is provided to ease
     # transitioning to the new API.
-    from bpy_extras.anim_utils import action_ensure_channelbag_for_slot
-    from bpy_extras.anim_utils import action_get_channelbag_for_slot
+    from bpy_extras.anim_utils import action_ensure_channelbag_for_slot, action_get_channelbag_for_slot
 
     def action_new_fcurve(
         action: Action, action_slot: 'bpy.types.ActionSlot', data_path: str, index: int, group_name

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-from .decorator import property_type
 from ..binary import BinaryReader, BinarySerializable, BinaryWriter
+from .decorator import property_type
 
 
 @property_type

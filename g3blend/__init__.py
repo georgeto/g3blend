@@ -2,6 +2,7 @@ import bpy
 
 from . import extension, ui
 
+
 bl_info = {
     'name': 'Gothic 3',
     'author': 'georgeto',

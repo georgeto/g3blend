@@ -1,9 +1,9 @@
 from dataclasses import dataclass, field
 
-from .decorator import property_set
-from .resource_base import eCResourceBase_PS
 from ..binary import BinaryReader, BinaryWriter
 from ..structs.mesh_element import eCMeshElement
+from .decorator import property_set
+from .resource_base import eCResourceBase_PS
 
 
 @property_set

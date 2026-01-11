@@ -1,4 +1,5 @@
 import struct
+
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from pathlib import Path

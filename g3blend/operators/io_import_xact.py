@@ -3,11 +3,13 @@ from pathlib import Path
 from typing import Optional
 
 import bpy
+
 from mathutils import Matrix, Vector
 
 from .. import log as logging
 from ..io.animation.chunks import MeshChunk, NodeChunk, SkinningInfoChunk, Submesh
-from ..io.animation.xact import ResourceAnimationActor as Xact, eCWrapper_emfx2Actor
+from ..io.animation.xact import ResourceAnimationActor as Xact
+from ..io.animation.xact import eCWrapper_emfx2Actor
 from ..util import (
     bone_correction_matrix,
     bone_correction_matrix_inv,
@@ -20,6 +22,7 @@ from ..util import (
     to_blend_vec_tuple,
     to_blend_vec_tuple_transform,
 )
+
 
 logger = logging.getLogger(__name__)
 

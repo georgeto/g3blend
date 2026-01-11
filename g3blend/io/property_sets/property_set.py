@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 from typing import Optional, Type
 
-from .property import Property
-from .property_desc import PropertyDescriptor
 from ..binary import BinaryReader, BinarySerializable, BinaryWriter
 from ..property_types import TPropertyType
+from .property import Property
+from .property_desc import PropertyDescriptor
 
 
 @dataclass

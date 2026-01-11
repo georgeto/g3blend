@@ -1,5 +1,6 @@
-from .registry import PropertySetRegistry, TPropertySet
 from ..binary import BinaryReader, BinaryWriter
+from .registry import PropertySetRegistry, TPropertySet
+
 
 _SUB_CLASS_IDENTIFIER = b'\x01\x00\x01\x01\x00\x01'
 _TYPE_TO_VERSION_FILLER = b'\x01\x00\x00\x53\x00'

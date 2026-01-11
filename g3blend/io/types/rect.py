@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-from . import bCPoint
 from ..binary import BinaryReader, BinarySerializable, BinaryWriter
+from . import bCPoint
 
 
 @dataclass(slots=True)

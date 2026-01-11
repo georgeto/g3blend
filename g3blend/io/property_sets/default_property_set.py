@@ -1,9 +1,10 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from .property_set import PropertySet
-from ..binary import BinaryReader, BinaryWriter
 from ... import log as logging
+from ..binary import BinaryReader, BinaryWriter
+from .property_set import PropertySet
+
 
 logger = logging.getLogger(__name__)
 

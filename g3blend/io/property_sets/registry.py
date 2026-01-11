@@ -3,6 +3,7 @@ from typing import Type, TypeVar
 from .default_property_set import DefaultPropertySet
 from .property_set import PropertySet
 
+
 TPropertySet = TypeVar('TPropertySet', bound=PropertySet)
 
 

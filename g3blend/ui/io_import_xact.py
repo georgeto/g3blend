@@ -1,13 +1,15 @@
 from pathlib import Path
 
 import bpy
+
 from bpy.props import BoolProperty, StringProperty
 from bpy_extras.io_utils import ImportHelper
 
-from .helper import AbstractFilePanel, AbstractFileTransformPanel, AxisHelper
 from .. import log as logging
 from ..operators.io_import_xact import load_xact
 from ..util import reset_scene
+from .helper import AbstractFilePanel, AbstractFileTransformPanel, AxisHelper
+
 
 logger = logging.getLogger(__name__)
 

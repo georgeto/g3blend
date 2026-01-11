@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 
-from .decorator import property_set
-from .shader_base import eCShaderBase
 from ..binary import BinaryReader, BinaryWriter
 from ..types import eCColorSrcProxy
+from .decorator import property_set
+from .shader_base import eCShaderBase
 
 
 @property_set

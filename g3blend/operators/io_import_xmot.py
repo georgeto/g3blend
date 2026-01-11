@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Optional
 
 import bpy
+
 from mathutils import Matrix
 
 from .. import log as logging
@@ -28,6 +29,7 @@ from ..util import (
     to_blend_vec,
     trunc_safe,
 )
+
 
 logger = logging.getLogger(__name__)
 

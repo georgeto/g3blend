@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 
+from ..binary import BinaryReader, BinaryWriter
 from .decorator import property_set
 from .resource_base import eCResourceBase_PS
 from .shader_base import eCShaderBase
 from .util import read_property_set, write_property_set
-from ..binary import BinaryReader, BinaryWriter
 
 
 @property_set
