@@ -20,11 +20,11 @@ logger = logging.getLogger(__name__)
 
 
 class ExportXmot(bpy.types.Operator, ExportHelper, AxisHelper):
-    """Export to xmot file format (.xmot)"""
+    """Export to xmot file format (.xmot)."""
 
     bl_idname = 'g3blend.io_export_xmot'
     bl_label = 'Export Motion (xmot)'
-    bl_options = {'UNDO', 'PRESET'}
+    bl_options = {'UNDO', 'PRESET'}  # noqa: RUF012
 
     filename_ext = '.xmot'
     filter_glob: StringProperty(default='*.xmot', options={'HIDDEN'})

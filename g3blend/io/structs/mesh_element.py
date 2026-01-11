@@ -16,9 +16,9 @@ class eSFVF:
 
 
 class eEVertexTypeStruct(IntEnum):
-    bCVector2 = 0
-    bCVector3 = 1
-    bCVector4 = 2
+    bCVector2 = 0  # noqa: N815 Gothic 3 class name
+    bCVector3 = 1  # noqa: N815 Gothic 3 class name
+    bCVector4 = 2  # noqa: N815 Gothic 3 class name
     GEU16 = 3
     GEU32 = 4
     GEFloat = 5

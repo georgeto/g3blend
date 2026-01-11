@@ -368,5 +368,5 @@ class BinaryWriter:
         return str(self)
 
 
-from .property_types import bCVector, bCVector2
-from .types import bCQuaternion, bCVector4
+from .property_types import bCVector, bCVector2  # noqa: E402 Use tail import to resolve circular import of binary
+from .types import bCQuaternion, bCVector4  # noqa: E402 Use tail import to resolve circular import of binary

@@ -2,7 +2,7 @@ from typing import Optional
 
 
 def _process_class(cls, name: Optional[str], aliases: Optional[list[str]]):
-    from ..property_types import registry
+    from ..property_types import registry  # noqa: PLC0415 Avoid circular import
 
     registry.PropertyTypeRegistry.register(cls, name if name else cls.__name__)
     if aliases:

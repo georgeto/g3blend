@@ -17,8 +17,8 @@ class StyleAdapter(logging.LoggerAdapter):
     def log(self, level: int, msg: str, /, *args, **kwargs):
         if self.isEnabledFor(level):
             msg, kwargs = self.process(msg, kwargs)
-            self.logger._log(level, Message(msg, args), (), **kwargs)
+            self.logger._log(level, Message(msg, args), (), **kwargs)  # noqa: SLF001
 
 
-def getLogger(name) -> logging.Logger:
+def getLogger(name) -> logging.Logger:  # noqa: N802
     return StyleAdapter(logging.getLogger(name))

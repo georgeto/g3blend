@@ -436,7 +436,7 @@ class MaterialChunk(AbstractChunk):
         writer.write_str_u32(self.shader_file_name)
 
 
-def get_chunk_type(chunk_id: int, version: int):
+def get_chunk_type(chunk_id: int, version: int):  # noqa: PLR0911
     match chunk_id:
         case NodeChunk.ID:
             if version == NodeChunk.VERSION:

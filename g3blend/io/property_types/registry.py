@@ -20,7 +20,7 @@ class PropertyTypeRegistry:
     def instantiate(cls, name: str, type_name: str) -> TPropertyType:
         if type_name not in cls.property_types:
             if cls.is_property_container(type_name):
-                from .property_container import bTPropertyContainer
+                from .property_container import bTPropertyContainer  # noqa: PLC0415 Avoid circular import
 
                 property_type = bTPropertyContainer
             else:

@@ -19,7 +19,7 @@ class ImportXact(bpy.types.Operator, ImportHelper, AxisHelper):
 
     bl_idname = 'g3blend.io_import_xact'
     bl_label = 'Import Actor (xact)'
-    bl_options = {'UNDO', 'PRESET'}
+    bl_options = {'UNDO', 'PRESET'}  # noqa: RUF012
 
     filename_ext = '.xact'
     filter_glob: StringProperty(default='*.xact', options={'HIDDEN'})

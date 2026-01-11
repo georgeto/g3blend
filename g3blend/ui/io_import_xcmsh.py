@@ -19,7 +19,7 @@ class ImportXcmsh(bpy.types.Operator, ImportHelper, AxisHelper):
 
     bl_idname = 'g3blend.io_import_xcmsh'
     bl_label = 'Import Mesh (xcmsh)'
-    bl_options = {'UNDO', 'PRESET'}
+    bl_options = {'UNDO', 'PRESET'}  # noqa: RUF012
 
     filename_ext = '.xcmsh'
     filter_glob: StringProperty(default='*.xcmsh', options={'HIDDEN'})

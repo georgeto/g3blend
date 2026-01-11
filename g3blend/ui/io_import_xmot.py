@@ -24,7 +24,7 @@ class ImportXmot(bpy.types.Operator, ImportHelper, AxisHelper):
 
     bl_idname = 'g3blend.io_import_xmot'
     bl_label = 'Import Motion (xmot)'
-    bl_options = {'UNDO', 'PRESET'}
+    bl_options = {'UNDO', 'PRESET'}  # noqa: RUF012
 
     directory: StringProperty(subtype='DIR_PATH', options={'HIDDEN', 'SKIP_PRESET'})
 
