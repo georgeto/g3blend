@@ -38,38 +38,11 @@ COMMONLY_USED_SLOTS = {
     'Slot_Beard',  # relevant for faces
 }
 
+FrameKey = tuple[str, AnimationType]
+FramesPerBone = dict[FrameKey, tuple[str, list[tuple[float, Any]]]]
 
-def save_xmot(
-    context: bpy.types.Context,
-    filepath: Path,
-    arm_obj: bpy.types.Object,
-    global_scale: float,
-    global_matrix: Matrix,
-    ignore_transform: bool,
-    bone_filter: str,
-):
-    xmot = Xmot()
-    xmot.resource_size = 0
-    xmot.resource_priority = 0.0
-    xmot.native_file_time = bCDateTime(0)  # TODO?
-    xmot.native_file_size = 0
-    xmot.unk_file_time = bCDateTime(0)
 
-    motion = xmot.motion = eCWrapper_emfx2Motion()
-    motion.chunks = []
-
-    # 1. Find armature
-    if arm_obj is None:
-        raise ValueError('No armature was selected.')
-
-    use_selection = bone_filter in ['SELECTED', 'SELECTED_WITH_SLOTS']
-    with_keysframes = bone_filter == 'WITH_KEYFRAMES'
-    filter_slots = not with_keysframes and bone_filter not in ['ALL_WITH_SLOTS', 'SELECTED_WITH_SLOTS']
-
-    # 2. Figure out keyframe/animation data for each bone
-    action = arm_obj.animation_data.action
-    migrate(action)
-
+def _group_frames_per_bone(arm_obj: bpy.types.Object, action: bpy.types.Action) -> FramesPerBone:
     action_slot = None
     # Support for Slotted Actions as introduced in Blender 4.4
     if hasattr(arm_obj.animation_data, 'action_slot'):
@@ -117,6 +90,165 @@ def save_xmot(
 
         # TODO: Might want to use sampling as an alternative for complex animations with constraints and stuff.
 
+
+def _export_bone(  # noqa: PLR0915
+    motion: eCWrapper_emfx2Motion,
+    pose_bone: bpy.types.PoseBone,
+    frames_per_bone: FramesPerBone,
+    root_matrix_no_scale: Matrix,
+    root_scale_inv: float | Vector,
+):
+    bone = pose_bone.bone
+
+    rest_matrix = bone.matrix_local
+    if bone.parent:
+        rest_matrix = (bone.parent.matrix_local @ bone_correction_matrix_inv).inverted_safe() @ rest_matrix
+    else:
+        rest_matrix = root_matrix_no_scale.inverted_safe() @ rest_matrix
+
+    # This derives from the calculation in import_xmot:
+    # O = (B * C)^-1 * ((P * C * C^-1 * X) * C)
+    # -> X = (P * C)^-1 * (B * C) * O * C^-1
+    # with B * C: Absolute Rest matrix (bone.matrix_local)
+    #      C: Correction (bone_correct_matrix),
+    #      P * C: Absolute Parent rest matrix (bone.parent.matrix_local)
+    #      X: Xmot Pose Matrix (motion_part_pose_matrix)
+    #      O: Pos Matrix (pose_bone.matrix_basis)
+    pre_matrix = rest_matrix
+    post_matrix = bone_correction_matrix_inv
+
+    # pose position = rest position (edit bone) @ pose base matrix (pose_bone.matrix_basis)
+    pose_matrix = pre_matrix @ pose_bone.matrix_basis @ post_matrix
+
+    loc, rot, scale = pose_matrix.decompose()
+
+    motion_part = motion.add_chunk(MotionPartChunk)
+    motion_part.name = pose_bone.name
+    motion_part.pose_position = _from_blend_vec(loc * root_scale_inv)
+    motion_part.pose_rotation = _from_blend_quat(rot)
+    motion_part.pose_scale = _from_blend_vec(scale)
+    motion_part.bind_pose_position = _from_blend_vec(loc * root_scale_inv)
+    motion_part.bind_pose_rotation = _from_blend_quat(rot)
+    motion_part.bind_pose_scale = _from_blend_vec(scale)
+
+    def position_value_map(v):
+        return _from_blend_vec((pre_matrix @ Matrix.Translation(v) @ post_matrix).to_translation() * root_scale_inv)
+
+    def rotation_value_map(v):
+        return _from_blend_quat((pre_matrix @ v.to_matrix().to_4x4() @ post_matrix).to_quaternion())
+
+    def scaling_value_map(v):
+        return _from_blend_vec((pre_matrix @ Matrix.LocRotScale(None, None, v) @ post_matrix).to_scale().to_3d())
+
+    for animation_type in AnimationType:
+        key = (pose_bone.name, animation_type)
+        if key not in frames_per_bone:
+            continue
+
+        interpolation, frames = frames_per_bone[key]
+        match interpolation:
+            # Linear
+            case 'LINEAR':
+                interpolation_type = InterpolationType.Linear
+            # Bezier
+            case 'BEZIER':
+                interpolation_type = InterpolationType.Bezier
+            case _:
+                logger.warning('Unsupported interpolation: {}', interpolation)
+                continue
+
+        match animation_type:
+            # Position
+            case AnimationType.Position:
+                frame_type = VectorKeyFrame
+                value_map = position_value_map
+            # Rotation
+            case AnimationType.Rotation:
+                frame_type = QuaternionKeyFrame
+                value_map = rotation_value_map
+            # Scaling
+            case AnimationType.Scaling:
+                frame_type = VectorKeyFrame
+                value_map = scaling_value_map
+            case _:
+                continue
+        # If the pose position/rotation/scale (separately) of a bone is constant across the entire animation,
+        # there is no key frame chunk for this property. To retain the pose of such a motion part, the xmot import
+        # has to synthesize a key frame for it. Here on export we filter out these constant key frames again,
+        if len(frames) < 1 or (len(frames) == 1 and frames[0][0] == 0.0):
+            continue
+
+        key_frame = motion.add_chunk(KeyFrameChunk)
+        key_frame.interpolation_type = interpolation_type
+        key_frame.animation_type = animation_type
+        key_frame.frames = []
+
+        for time, value in frames:
+            xframe = frame_type()
+            # TODO: Proper time/FPS scaling
+            xframe.time = time / 25
+            xframe.value = value_map(value)
+            key_frame.frames.append(xframe)
+
+
+def _export_bones(
+    motion: eCWrapper_emfx2Motion,
+    context: bpy.types.Context,
+    arm_obj: bpy.types.Object,
+    frames_per_bone: FramesPerBone,
+    root_matrix_no_scale: Matrix,
+    root_scale_inv: float | Vector,
+    bone_filter: str,
+):
+    use_selection = bone_filter in ['SELECTED', 'SELECTED_WITH_SLOTS']
+    with_keysframes = bone_filter == 'WITH_KEYFRAMES'
+    filter_slots = not with_keysframes and bone_filter not in ['ALL_WITH_SLOTS', 'SELECTED_WITH_SLOTS']
+
+    selected_pose_bones = context.selected_pose_bones
+    for pose_bone in reversed(arm_obj.pose.bones):
+        # Filter by selection.
+        if use_selection and pose_bone not in selected_pose_bones:
+            continue
+
+        # Filter by keyframes.
+        if with_keysframes and not any(True for bone_name, _ in frames_per_bone if bone_name == pose_bone.name):
+            continue
+
+        if filter_slots and pose_bone.name.startswith('Slot_') and pose_bone.name not in COMMONLY_USED_SLOTS:
+            continue
+
+        _export_bone(motion, pose_bone, frames_per_bone, root_matrix_no_scale, root_scale_inv)
+
+
+def save_xmot(
+    context: bpy.types.Context,
+    filepath: Path,
+    arm_obj: bpy.types.Object,
+    global_scale: float,
+    global_matrix: Matrix,
+    ignore_transform: bool,
+    bone_filter: str,
+):
+    xmot = Xmot()
+    xmot.resource_size = 0
+    xmot.resource_priority = 0.0
+    xmot.native_file_time = bCDateTime(0)  # TODO?
+    xmot.native_file_size = 0
+    xmot.unk_file_time = bCDateTime(0)
+
+    motion = xmot.motion = eCWrapper_emfx2Motion()
+    motion.chunks = []
+
+    # 1. Find armature
+    if arm_obj is None:
+        raise ValueError('No armature was selected.')
+
+    action = arm_obj.animation_data.action
+    migrate(action)
+
+    # 2. Figure out keyframe/animation data for each bone
+    frames_per_bone = _group_frames_per_bone(arm_obj, action)
+
     old_scene_frame_current = context.scene.frame_current
     # TODO: Use scene.frame_start instead?
     # Have to jump to first frame of animation so that pose_bone.matrix_basis is set to value of the first frame.
@@ -131,110 +263,7 @@ def save_xmot(
         root_scale_inv = 1 / root_scale
 
     # 3. Collect all bones in armature
-    selected_pose_bones = context.selected_pose_bones
-    for pose_bone in reversed(arm_obj.pose.bones):
-        # Filter by selection.
-        if use_selection and pose_bone not in selected_pose_bones:
-            continue
-
-        # Filter by keyframes.
-        if with_keysframes and not any(True for bone_name, _ in frames_per_bone if bone_name == pose_bone.name):
-            continue
-
-        if filter_slots and pose_bone.name.startswith('Slot_') and pose_bone.name not in COMMONLY_USED_SLOTS:
-            continue
-
-        bone = pose_bone.bone
-
-        rest_matrix = bone.matrix_local
-        if bone.parent:
-            rest_matrix = (bone.parent.matrix_local @ bone_correction_matrix_inv).inverted_safe() @ rest_matrix
-        else:
-            rest_matrix = root_matrix_no_scale.inverted_safe() @ rest_matrix
-
-        # This derives from the calculation in import_xmot:
-        # O = (B * C)^-1 * ((P * C * C^-1 * X) * C)
-        # -> X = (P * C)^-1 * (B * C) * O * C^-1
-        # with B * C: Absolute Rest matrix (bone.matrix_local)
-        #      C: Correction (bone_correct_matrix),
-        #      P * C: Absolute Parent rest matrix (bone.parent.matrix_local)
-        #      X: Xmot Pose Matrix (motion_part_pose_matrix)
-        #      O: Pos Matrix (pose_bone.matrix_basis)
-        pre_matrix = rest_matrix
-        post_matrix = bone_correction_matrix_inv
-
-        # pose position = rest position (edit bone) @ pose base matrix (pose_bone.matrix_basis)
-        pose_matrix = pre_matrix @ pose_bone.matrix_basis @ post_matrix
-
-        loc, rot, scale = pose_matrix.decompose()
-
-        motion_part = motion.add_chunk(MotionPartChunk)
-        motion_part.name = pose_bone.name
-        motion_part.pose_position = _from_blend_vec(loc * root_scale_inv)
-        motion_part.pose_rotation = _from_blend_quat(rot)
-        motion_part.pose_scale = _from_blend_vec(scale)
-        motion_part.bind_pose_position = _from_blend_vec(loc * root_scale_inv)
-        motion_part.bind_pose_rotation = _from_blend_quat(rot)
-        motion_part.bind_pose_scale = _from_blend_vec(scale)
-
-        def position_value_map(v):
-            return _from_blend_vec((pre_matrix @ Matrix.Translation(v) @ post_matrix).to_translation() * root_scale_inv)
-
-        def rotation_value_map(v):
-            return _from_blend_quat((pre_matrix @ v.to_matrix().to_4x4() @ post_matrix).to_quaternion())
-
-        def scaling_value_map(v):
-            return _from_blend_vec((pre_matrix @ Matrix.LocRotScale(None, None, v) @ post_matrix).to_scale().to_3d())
-
-        for animation_type in AnimationType:
-            key = (pose_bone.name, animation_type)
-            if key not in frames_per_bone:
-                continue
-
-            interpolation, frames = frames_per_bone[key]
-            match interpolation:
-                # Linear
-                case 'LINEAR':
-                    interpolation_type = InterpolationType.Linear
-                # Bezier
-                case 'BEZIER':
-                    interpolation_type = InterpolationType.Bezier
-                case _:
-                    logger.warning('Unsupported interpolation: {}', interpolation)
-                    continue
-
-            match animation_type:
-                # Position
-                case AnimationType.Position:
-                    frame_type = VectorKeyFrame
-                    value_map = position_value_map
-                # Rotation
-                case AnimationType.Rotation:
-                    frame_type = QuaternionKeyFrame
-                    value_map = rotation_value_map
-                # Scaling
-                case AnimationType.Scaling:
-                    frame_type = VectorKeyFrame
-                    value_map = scaling_value_map
-                case _:
-                    continue
-            # If the pose position/rotation/scale (separately) of a bone is constant across the entire animation,
-            # there is no key frame chunk for this property. To retain the pose of such a motion part, the xmot import
-            # has to synthesize a key frame for it. Here on export we filter out these constant key frames again,
-            if len(frames) < 1 or (len(frames) == 1 and frames[0][0] == 0.0):
-                continue
-
-            key_frame = motion.add_chunk(KeyFrameChunk)
-            key_frame.interpolation_type = interpolation_type
-            key_frame.animation_type = animation_type
-            key_frame.frames = []
-
-            for time, value in frames:
-                xframe = frame_type()
-                # TODO: Proper time/FPS scaling
-                xframe.time = time / 25
-                xframe.value = value_map(value)
-                key_frame.frames.append(xframe)
+    _export_bones(motion, context, arm_obj, frames_per_bone, root_matrix_no_scale, root_scale_inv, bone_filter)
 
     # Extract frame effects.
     xmot.frame_effects = [eSFrameEffect(f.key_frame, f.effect_name) for f in action.g3blend_ext.frame_effects]
