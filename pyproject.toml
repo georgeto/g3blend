@@ -32,6 +32,7 @@ ignore = [
     "D205", # We are lax about docstrings for now.
     "D212",
     "EM", # strings are fine
+    "ERA001", # allow for now, used as some kind of TODO
     "N801", # We use original names for Gothic 3 classes
     "FBT", # bools are our friends
     "FIX", # Yes, we want TODO as a marker.
