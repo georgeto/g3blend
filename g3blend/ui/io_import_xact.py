@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class ImportXact(bpy.types.Operator, ImportHelper, AxisHelper):
-    """Import from xact file format (.xact)"""
+    """Import from xact file format (.xact)."""
 
     bl_idname = 'g3blend.io_import_xact'
     bl_label = 'Import Actor (xact)'

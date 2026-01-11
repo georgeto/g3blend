@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class ImportXcmsh(bpy.types.Operator, ImportHelper, AxisHelper):
-    """Import from xcmsh file format (.xcmsh)"""
+    """Import from xcmsh file format (.xcmsh)."""
 
     bl_idname = 'g3blend.io_import_xcmsh'
     bl_label = 'Import Mesh (xcmsh)'

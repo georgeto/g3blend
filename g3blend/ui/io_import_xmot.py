@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 class ImportXmot(bpy.types.Operator, ImportHelper, AxisHelper):
-    """Import from xmot file format (.xmot)"""
+    """Import from xmot file format (.xmot)."""
 
     bl_idname = 'g3blend.io_import_xmot'
     bl_label = 'Import Motion (xmot)'
