@@ -9,3 +9,19 @@ from .registry import PropertyTypeRegistry, TPropertyType
 from .string import bCString
 from .vector import bCVector
 from .vector2 import bCVector2
+
+
+__all__ = [
+    'PropertyTypeRegistry',
+    'TPropertyType',
+    'bCBox',
+    'bCDateTime',
+    'bCFloatColor',
+    'bCString',
+    'bCVector',
+    'bCVector2',
+    'bTPropertyContainer',
+    'gBool',
+    'gChar',
+    'gFloat',
+]
