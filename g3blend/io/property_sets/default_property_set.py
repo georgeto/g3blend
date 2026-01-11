@@ -16,8 +16,9 @@ class DefaultPropertySet(PropertySet):
     def read_post_version(self, reader: BinaryReader) -> None:
         if reader.position() < self._deadcode_position:
             logger.warning(
-                f'{self.name} is handled by DefaultPropertySet but contains Subclass(es) - Size: '
-                f'{self._deadcode_position - 4 - reader.position()}'
+                '{} is handled by DefaultPropertySet but contains Subclass(es) - Size: {}',
+                self.name,
+                self._deadcode_position - 4 - reader.position(),
             )
             self.raw = reader.read_bytes(self._deadcode_position - reader.position())
 
