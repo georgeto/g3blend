@@ -288,8 +288,8 @@ def _extract_frames_from_curves(
     key_frames = []
     for i in range(num_keyframes):
         value = combine(tuple(frames[i].co[1] for frames in channels))
-        frame_time: float = _all_same((frames[i].co[0] for frames in channels))
-        interpolation: str = _all_same((frames[i].interpolation for frames in channels))
+        frame_time: float = _all_same(frames[i].co[0] for frames in channels)
+        interpolation: str = _all_same(frames[i].interpolation for frames in channels)
         if common_interpolation is None:
             common_interpolation = interpolation
         elif common_interpolation != interpolation:

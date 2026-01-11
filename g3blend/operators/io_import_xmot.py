@@ -55,10 +55,10 @@ class _ImportState:
 
 
 def _detect_frame_time(_xmot: Xmot):
-    # TODO: ...
-    return 25
     """
-    // Determine min and max frame
+    Determine min and max frame.
+
+    # TODO
     float minFrameTime = Float.MAX_VALUE;
     float maxFrameTime = 0;
     for (KeyFrameChunk keyFrameChunk : motion.motion.<KeyFrameChunk>streamChunksByType(LMA_CHUNK.LMA_CHUNK_ANIM)) {
@@ -78,6 +78,7 @@ def _detect_frame_time(_xmot: Xmot):
         throw new IllegalStateException("Detected LastFrame " + lastFrame + " is not an integral value.");
     int numFrames = (Math.round(lastFrame)) + 1;
     """
+    return 25
 
 
 def _group_motion_parts(xmot: Xmot) -> list[tuple[MotionPartChunk, list[KeyFrameChunk]]]:

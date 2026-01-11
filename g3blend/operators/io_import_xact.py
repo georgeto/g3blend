@@ -194,7 +194,7 @@ def _is_obsolete_joint(node: NodeChunk):
     I suspect that the second condition is to preserve the root *_ROOT node (e.g. Orc_ROOT).
     """
     name = node.name
-    return (name.endswith('_ROOT') or name.endswith('_END')) and len(name.split('_')) > 2
+    return name.endswith(('_ROOT', '_END')) and len(name.split('_')) > 2
 
 
 def _import_armature_node(

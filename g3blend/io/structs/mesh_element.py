@@ -353,7 +353,7 @@ class eCMeshElement(BinarySerializable):
             reader.skip(reader.read_u32() * 4)
 
     def write(self, writer: BinaryWriter):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def has_stream_array(self, stream_type: eEVertexStreamArrayType) -> bool:
         return any(a.vertex_stream_type == stream_type for a in self.stream_arrays)

@@ -68,7 +68,7 @@ def get_child_nodes(node: T, nodes: list[T]) -> Iterable[T]:
 
 def similar_values_iter(v1, v2, epsilon=1e-4):
     """Return True if iterables v1 and v2 are nearly the same."""
-    return v1 == v2 or all(math.isclose(c1, c2, abs_tol=epsilon) for c1, c2 in zip(v1, v2))
+    return v1 == v2 or all(math.isclose(c1, c2, abs_tol=epsilon) for c1, c2 in zip(v1, v2, strict=False))
 
 
 def trunc_safe(v, epsilon=1e-4):
@@ -134,13 +134,12 @@ def find_armature(context: bpy.types.Context) -> Optional[bpy.types.Object]:
 
     if actor_obj.parent:
         return next((c for c in actor_obj.parent.children if c.type == 'ARMATURE'), None)
+    return None
 
 
 # Note: Taken from KrxImpExp
 # Reset the current scene
 def reset_scene():
-    import bpy
-
     # Remove scenes
     empty_scn = bpy.data.scenes.new('Scene')
     for i in range(len(bpy.data.scenes) - 1, -1, -1):

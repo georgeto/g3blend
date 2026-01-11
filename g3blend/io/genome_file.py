@@ -12,7 +12,7 @@ def _read_content(reader: BinaryReader, content_type: type[TBinarySerializable])
     if issubclass(content_type, PropertySet):
         property_set = read_property_set(reader)
         if not isinstance(property_set, content_type):
-            raise ValueError(f'Expected property set {content_type}, got {type(property_set)}.')
+            raise TypeError(f'Expected property set {content_type}, got {type(property_set)}.')
         return property_set
     return reader.read(content_type)
 

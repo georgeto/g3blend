@@ -22,3 +22,7 @@ class bCGuid(BinarySerializable):
     def __eq__(self, other) -> bool:
         if isinstance(other, bCGuid):
             return self.is_valid() == other.is_valid() and self.guid == other.guid
+        return None
+
+    def __hash__(self):
+        return hash((self.is_valid(), self.guid))
