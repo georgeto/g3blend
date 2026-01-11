@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, Type
+from typing import Optional
 
 from ..binary import BinaryReader, BinarySerializable, BinaryWriter
 from ..property_types import TPropertyType
@@ -66,8 +66,8 @@ class PropertySet(BinarySerializable):
     def get_name(self) -> str:
         return self.name
 
-    def type_equal(self, type: str) -> bool:
-        return self.name == type
+    def type_equal(self, type_name: str) -> bool:
+        return self.name == type_name
 
     def add_property(self, prop: Property, predecessor: Optional[str] = None) -> 'PropertySet':
         if predecessor is None:
@@ -109,16 +109,16 @@ class PropertySet(BinarySerializable):
                 return prop.value
         raise ValueError(self._no_such_property_error(name))
 
-    def property_no_throw_by_type(self, name: str, type: Type[TPropertyType]) -> Optional[TPropertyType]:
+    def property_no_throw_by_type(self, name: str, type_: type[TPropertyType]) -> Optional[TPropertyType]:
         for prop in self.properties:
             if prop.name == name:
-                return type.cast(prop)
+                return type_.cast(prop)
         return None
 
-    def property_by_type(self, name: str, type: Type[TPropertyType]) -> TPropertyType:
+    def property_by_type(self, name: str, type_: type[TPropertyType]) -> TPropertyType:
         for prop in self.properties:
             if prop.name == name:
-                return type.cast(prop.value)
+                return type_.cast(prop.value)
         raise ValueError(self._no_such_property_error(name))
 
     def property_by_occurence(self, name: str, occurence: int) -> TPropertyType:
@@ -128,11 +128,11 @@ class PropertySet(BinarySerializable):
                 return prop.value
         raise ValueError(self._no_such_property_error(name))
 
-    def property_by_type_and_occurence(self, name: str, type: Type[TPropertyType], occurence: int) -> TPropertyType:
+    def property_by_type_and_occurence(self, name: str, type_: type[TPropertyType], occurence: int) -> TPropertyType:
         skipped = 0
         for prop in self.properties:
             if prop == name and occurence == skipped + 1:
-                return type.cast(prop.value)
+                return type_.cast(prop.value)
         raise ValueError(self._no_such_property_error(name))
 
     def property_by_desc(self, desc: PropertyDescriptor[TPropertyType]) -> TPropertyType:

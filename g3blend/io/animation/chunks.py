@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum, IntEnum
-from typing import Generic, Type, TypeVar
+from typing import Generic, Optional, TypeVar
 
 from ..binary import BinaryReader, BinarySerializable, BinaryWriter
 from ..property_types import bCVector, bCVector2
@@ -93,7 +93,7 @@ class UnknownChunk(AbstractChunk):
     def read(self, reader: BinaryReader) -> None:
         raise NotImplementedError('No size provided.')
 
-    def read_sized(self, reader: BinaryReader, size: int = None) -> None:
+    def read_sized(self, reader: BinaryReader, size: Optional[int] = None) -> None:
         self.chunk_data = reader.read_bytes(size)
 
     def write(self, writer: BinaryWriter) -> None:
@@ -288,9 +288,9 @@ class AnimationType(Enum):
 
 
 @dataclass(slots=True)
-class KeyFrame(BinarySerializable, Generic[KeyFrameValueType], ABC):
-    time: float = None  # time in seconds
-    value: KeyFrameValueType = None
+class KeyFrame(BinarySerializable, ABC, Generic[KeyFrameValueType]):
+    time: Optional[float] = None  # time in seconds
+    value: Optional[KeyFrameValueType] = None
 
 
 @dataclass(slots=True)
@@ -471,15 +471,15 @@ def get_chunk_type(chunk_id: int, version: int):
 class ChunkContainer:
     chunks: list[Chunk]
 
-    def has_chunk(self, chunk_type: Type[TChunk]) -> bool:
+    def has_chunk(self, chunk_type: type[TChunk]) -> bool:
         return any(self.get_chunks_by_type(chunk_type))
 
-    def get_chunk_by_type(self, chunk_type: Type[TChunk]) -> TChunk:
+    def get_chunk_by_type(self, chunk_type: type[TChunk]) -> TChunk:
         typed_chunks = self.get_chunks_by_type(chunk_type)
         assert len(typed_chunks) == 1
         return typed_chunks[0]
 
-    def get_chunks_by_type(self, chunk_type: Type[TChunk]) -> list[TChunk]:
+    def get_chunks_by_type(self, chunk_type: type[TChunk]) -> list[TChunk]:
         return [c for c in self.chunks if c.chunk_id == chunk_type.ID]
 
     def read_chunks(self, reader: BinaryReader, offset_end: int):
@@ -504,7 +504,7 @@ class ChunkContainer:
             with writer.at_position(chunk_size_offset) as pos:
                 writer.write_u32(pos - chunk_size_offset - 8)
 
-    def add_chunk(self, chunk_type: Type[TChunk]) -> TChunk:
+    def add_chunk(self, chunk_type: type[TChunk]) -> TChunk:
         chunk = chunk_type()
         chunk.chunk_id = chunk_type.ID
         chunk.version = chunk_type.VERSION

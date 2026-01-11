@@ -1,18 +1,18 @@
-from typing import Type, TypeVar
+from typing import ClassVar, TypeVar
 
 
-TPropertyType = TypeVar('TPropertyType', bound='BinarySerializable')
+TPropertyType = TypeVar('TPropertyType', bound='BinarySerializable')  # noqa: F821 Avoid circular import
 
 
 class PropertyTypeRegistry:
-    property_types: dict[str, Type[TPropertyType]] = {}
+    property_types: ClassVar[dict[str, type[TPropertyType]]] = {}
 
     @classmethod
     def is_property_container(cls, type_name: str) -> bool:
         return type_name.startswith('bTPropertyContainer<enum')
 
     @classmethod
-    def register(cls, property_type: Type[TPropertyType], type_name: str) -> None:
+    def register(cls, property_type: type[TPropertyType], type_name: str) -> None:
         assert type_name not in cls.property_types
         cls.property_types[type_name] = property_type
 

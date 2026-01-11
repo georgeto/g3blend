@@ -1,5 +1,3 @@
-from typing import Type
-
 from .binary import BinaryReader, BinaryWriter, TBinarySerializable
 from .property_sets.property_set import PropertySet
 from .property_sets.util import read_property_set, write_property_set
@@ -10,7 +8,7 @@ _DEADBEEF = b'\xef\xbe\xad\xde'
 _VERSION = 1
 
 
-def _read_content(reader: BinaryReader, content_type: Type[TBinarySerializable]) -> TBinarySerializable:
+def _read_content(reader: BinaryReader, content_type: type[TBinarySerializable]) -> TBinarySerializable:
     if issubclass(content_type, PropertySet):
         property_set = read_property_set(reader)
         if not isinstance(property_set, content_type):
@@ -21,7 +19,7 @@ def _read_content(reader: BinaryReader, content_type: Type[TBinarySerializable])
 
 
 def read(
-    reader: BinaryReader, content_type: Type[TBinarySerializable], allow_fallback: bool = False
+    reader: BinaryReader, content_type: type[TBinarySerializable], allow_fallback: bool = False
 ) -> TBinarySerializable:
     if not reader.expect_bytes(_GENOME_MAGIC):
         if allow_fallback:

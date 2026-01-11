@@ -1,7 +1,8 @@
 import math
 
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, Optional, Type, TypeVar
+from typing import Optional, TypeVar
 
 import bpy
 
@@ -20,7 +21,7 @@ T = TypeVar('T')
 
 
 def read_genome_file(
-    file: Path, content_type: Type[TBinarySerializable], allow_fallback: bool = False
+    file: Path, content_type: type[TBinarySerializable], allow_fallback: bool = False
 ) -> TBinarySerializable:
     return genome_file.read(BinaryReader(Path(file)), content_type, allow_fallback)
 

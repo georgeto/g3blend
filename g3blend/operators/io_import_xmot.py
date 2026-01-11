@@ -42,8 +42,8 @@ class _ImportState:
     fps: float
     root_scale: float
     root_matrix_no_scale: Matrix
-    min_frame_time: float = None
-    max_frame_time: float = None
+    min_frame_time: Optional[float] = None
+    max_frame_time: Optional[float] = None
 
     def update_frame_time(self, frame_time: float):
         if self.min_frame_time is not None:

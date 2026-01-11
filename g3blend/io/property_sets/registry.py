@@ -1,4 +1,4 @@
-from typing import Type, TypeVar
+from typing import ClassVar, TypeVar
 
 from .default_property_set import DefaultPropertySet
 from .property_set import PropertySet
@@ -8,10 +8,10 @@ TPropertySet = TypeVar('TPropertySet', bound=PropertySet)
 
 
 class PropertySetRegistry:
-    property_types: dict[str, Type[TPropertySet]] = {}
+    property_types: ClassVar[dict[str, type[TPropertySet]]] = {}
 
     @classmethod
-    def register(cls, property_type: Type[TPropertySet], type_name: str) -> None:
+    def register(cls, property_type: type[TPropertySet], type_name: str) -> None:
         assert type_name not in cls.property_types
         cls.property_types[type_name] = property_type
 

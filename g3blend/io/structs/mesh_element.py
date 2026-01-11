@@ -1,6 +1,7 @@
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import IntEnum
-from typing import Callable, ClassVar, Generic, Optional, TypeVar
+from typing import ClassVar, Generic, Optional, TypeVar
 
 from ..binary import BinaryReader, BinarySerializable, BinaryWriter
 from ..property_types import bCBox, bCVector, bCVector2
@@ -226,7 +227,7 @@ TVetexArrayType = TypeVar('TVetexArrayType')
 
 
 @dataclass(slots=True)
-class eCVertexStructArrayBase(Generic[TVetexArrayType], BinarySerializable):
+class eCVertexStructArrayBase(BinarySerializable, Generic[TVetexArrayType]):
     read_element: ClassVar[Callable[[BinaryReader], TVetexArrayType]]
     write_element: ClassVar[Callable[[BinaryWriter, TVetexArrayType], None]]
 

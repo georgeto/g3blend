@@ -1,15 +1,15 @@
 from dataclasses import dataclass
-from typing import Generic
+from typing import Generic, Optional
 
 from ..binary import BinaryReader, BinarySerializable, BinaryWriter
 from ..property_types import PropertyTypeRegistry, TPropertyType
 
 
 @dataclass(slots=True)
-class Property(Generic[TPropertyType], BinarySerializable):
-    name: str = None
-    type: str = None
-    value: TPropertyType = None
+class Property(BinarySerializable, Generic[TPropertyType]):
+    name: Optional[str] = None
+    type: Optional[str] = None
+    value: Optional[TPropertyType] = None
     _magic_value: int = 30  # 0x1E00
 
     def read(self, reader: BinaryReader) -> None:
