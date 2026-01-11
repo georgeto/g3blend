@@ -177,6 +177,15 @@ def save_xmot(
         motion_part.bind_pose_rotation = _from_blend_quat(rot)
         motion_part.bind_pose_scale = _from_blend_vec(scale)
 
+        def position_value_map(v):
+            return _from_blend_vec((pre_matrix @ Matrix.Translation(v) @ post_matrix).to_translation() * root_scale_inv)
+
+        def rotation_value_map(v):
+            return _from_blend_quat((pre_matrix @ v.to_matrix().to_4x4() @ post_matrix).to_quaternion())
+
+        def scaling_value_map(v):
+            return _from_blend_vec((pre_matrix @ Matrix.LocRotScale(None, None, v) @ post_matrix).to_scale().to_3d())
+
         for animation_type in AnimationType:
             key = (pose_bone.name, animation_type)
             if key not in frames_per_bone:
@@ -197,22 +206,16 @@ def save_xmot(
             match animation_type:
                 # Position
                 case AnimationType.Position:
-                    value_map = lambda p, v: _from_blend_vec(
-                        (pre_matrix @ Matrix.Translation(v) @ post_matrix).to_translation() * root_scale_inv
-                    )
                     frame_type = VectorKeyFrame
+                    value_map = position_value_map
                 # Rotation
                 case AnimationType.Rotation:
-                    value_map = lambda p, v: _from_blend_quat(
-                        (pre_matrix @ v.to_matrix().to_4x4() @ post_matrix).to_quaternion()
-                    )
                     frame_type = QuaternionKeyFrame
+                    value_map = rotation_value_map
                 # Scaling
                 case AnimationType.Scaling:
-                    value_map = lambda p, v: _from_blend_vec(
-                        (pre_matrix @ Matrix.LocRotScale(None, None, v) @ post_matrix).to_scale().to_3d()
-                    )
                     frame_type = VectorKeyFrame
+                    value_map = scaling_value_map
                 case _:
                     continue
             # If the pose position/rotation/scale (separately) of a bone is constant across the entire animation,
@@ -230,7 +233,7 @@ def save_xmot(
                 xframe = frame_type()
                 # TODO: Proper time/FPS scaling
                 xframe.time = time / 25
-                xframe.value = value_map(xframe, value)
+                xframe.value = value_map(value)
                 key_frame.frames.append(xframe)
 
     # Extract frame effects.

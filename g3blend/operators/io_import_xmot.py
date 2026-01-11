@@ -151,27 +151,30 @@ def _import_key_frames(
     state: _ImportState,
     synthesized: bool,
 ):
+    def position_value_extract(v):
+        return (pre_matrix @ Matrix.Translation(to_blend_vec(v) * state.root_scale) @ post_matrix).to_translation()
+
+    def rotation_value_extract(v):
+        return (pre_matrix @ to_blend_quat(v).to_matrix().to_4x4() @ post_matrix).to_quaternion()
+
+    def scaling_value_extract(v):
+        return (pre_matrix @ Matrix.LocRotScale(None, None, to_blend_vec(v)) @ post_matrix).to_scale().to_3d()
+
     match animation_type:
         # Position
         case AnimationType.Position:
             curve_path = 'location'
-            value_extract = lambda v: (
-                pre_matrix @ Matrix.Translation(to_blend_vec(v) * state.root_scale) @ post_matrix
-            ).to_translation()
+            value_extract = position_value_extract
             num_channels = 3
         # Rotation
         case AnimationType.Rotation:
             curve_path = 'rotation_quaternion'
-            value_extract = lambda v: (pre_matrix @ to_blend_quat(v).to_matrix().to_4x4() @ post_matrix).to_quaternion()
+            value_extract = rotation_value_extract
             num_channels = 4
         # Scaling
         case AnimationType.Scaling:
             curve_path = 'scale'
-            value_extract = (
-                lambda v: (pre_matrix @ Matrix.LocRotScale(None, None, to_blend_vec(v)) @ post_matrix)
-                .to_scale()
-                .to_3d()
-            )
+            value_extract = scaling_value_extract
             num_channels = 3
         case _:
             raise ValueError(f'Unsupported animation type: {animation_type}')
