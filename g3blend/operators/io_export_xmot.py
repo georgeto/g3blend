@@ -251,7 +251,8 @@ def save_xmot(
 
     # TODO: Two export modes:
     #   - If keyframes have compatible format, directly export the keyframes.
-    #     Problem is that this only works for the current action of the object, actions that are not current, cannot be exported like that...
+    #     Problem is that this only works for the current action of the object,
+    #     actions that are not current, cannot be exported like that...
     #   - Otherwise sample the scene for each frame.
     # (see the different variants in `fbx_animations(scene_data):`)
 

@@ -216,7 +216,8 @@ def _import_armature_node(
     bone_size = 0.0
     num_childs = 0
     for child in children:
-        # _ROOT nodes help us to figure out the length of bones that have multiple children, by ignoring the _ROOT nodes.
+        # _ROOT nodes help us to figure out the length of bones that have multiple children,
+        # by ignoring the _ROOT nodes.
         # (For example Hero_Spine_Spine_1 with left and right hip _ROOTs).
         # _END nodes help us to figure out the length of bones that have no "real" children.
         if not _is_helper_joint_root(child) and not _is_helper_joint_slot(child):

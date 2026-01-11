@@ -63,7 +63,8 @@ class ExportXmot(bpy.types.Operator, ExportHelper, AxisHelper):
                 'Include only bones that have keyframe data assigned. '
                 'Especially useful when re-exporting a modified animation, because for example overlay animations'
                 '(recognizable by their _O_ infix) only apply to a part of the skeleton. '
-                'In such an xmot, only a subset of bones is contained and on import keyframe data is only created for these bones.'
+                'In such an xmot, only a subset of bones is contained, '
+                'and on import keyframe data is only created for these bones.'
                 "When re-exporting later with 'With Keyframes' ensures that only this subset of bones is included.",
             ),
             (
