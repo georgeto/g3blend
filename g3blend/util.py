@@ -222,3 +222,10 @@ except ImportError:
 
     def action_get_fcurves(action: Action, _: 'bpy.types.ActionSlot') -> Iterable[FCurve]:
         return action.fcurves
+
+
+def hidden_property_options() -> set:
+    if bpy.app.version >= (4, 1, 0):
+        # SKIP_PRESET is only introduced with Blender 4.1
+        return {'HIDDEN', 'SKIP_PRESET'}
+    return {'HIDDEN'}

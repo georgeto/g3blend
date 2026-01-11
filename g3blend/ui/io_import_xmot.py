@@ -7,6 +7,7 @@ from bpy_extras.io_utils import ImportHelper
 
 from .. import log as logging
 from ..operators.io_import_xmot import load_xmot
+from ..util import hidden_property_options
 from .helper import (
     AbstractFilePanel,
     AbstractFileTransformPanel,
@@ -26,13 +27,13 @@ class ImportXmot(bpy.types.Operator, ImportHelper, AxisHelper):
     bl_label = 'Import Motion (xmot)'
     bl_options = {'UNDO', 'PRESET'}  # noqa: RUF012
 
-    directory: StringProperty(subtype='DIR_PATH', options={'HIDDEN', 'SKIP_PRESET'})
+    directory: StringProperty(subtype='DIR_PATH', options=hidden_property_options())
 
     filename_ext = '.xmot'
-    filter_glob: StringProperty(default='*.xmot', options={'HIDDEN'})
+    filter_glob: StringProperty(default='*.xmot', options=hidden_property_options())
 
     files: CollectionProperty(
-        name='File Path', type=bpy.types.OperatorFileListElement, options={'HIDDEN', 'SKIP_PRESET'}
+        name='File Path', type=bpy.types.OperatorFileListElement, options=hidden_property_options()
     )
 
     ignore_transform: BoolProperty(
