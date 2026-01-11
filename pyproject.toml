@@ -8,6 +8,7 @@ requires-python = ">=3.10"
 [dependency-groups]
 dev = [
     "fake-bpy-module-latest>=20251003",
+    "pre-commit>=4.5.1",
     "ruff>=0.14.10",
 ]
 
