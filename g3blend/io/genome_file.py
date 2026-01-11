@@ -14,8 +14,7 @@ def _read_content(reader: BinaryReader, content_type: type[TBinarySerializable])
         if not isinstance(property_set, content_type):
             raise ValueError(f'Expected property set {content_type}, got {type(property_set)}.')
         return property_set
-    else:
-        return reader.read(content_type)
+    return reader.read(content_type)
 
 
 def read(
@@ -24,8 +23,7 @@ def read(
     if not reader.expect_bytes(_GENOME_MAGIC):
         if allow_fallback:
             return _read_content(reader, content_type)
-        else:
-            raise ValueError('Not a valid Genome file.')
+        raise ValueError('Not a valid Genome file.')
 
     if (version := reader.read_u16()) != _VERSION:
         raise ValueError(f'Unsupported Genome file version: {version}')

@@ -214,8 +214,7 @@ try:
     def action_get_fcurves(action: Action, action_slot: 'bpy.types.ActionSlot') -> Iterable[FCurve]:
         if channelbag := action_get_channelbag_for_slot(action, action_slot):
             return channelbag.fcurves
-        else:
-            return []
+        return []
 
 except ImportError:
     # For older versions fall back to the legacy API.

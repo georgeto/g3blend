@@ -35,8 +35,7 @@ class G3BLEND_OT_FrameEffect_List_Remove(Operator):
             ext.frame_effects.remove(idx)
             ext.frame_effects_index = min(idx, max(0, len(ext.frame_effects) - 1))
             return {'FINISHED'}
-        else:
-            return {'CANCELLED'}
+        return {'CANCELLED'}
 
 
 class G3BLEND_OT_FrameEffect_List_MoveUp(Operator):
@@ -51,8 +50,7 @@ class G3BLEND_OT_FrameEffect_List_MoveUp(Operator):
             ext.frame_effects.move(idx, new_index)
             ext.frame_effects_index = new_index
             return {'FINISHED'}
-        else:
-            return {'CANCELLED'}
+        return {'CANCELLED'}
 
 
 class G3BLEND_OT_FrameEffect_List_MoveDown(Operator):
@@ -67,8 +65,7 @@ class G3BLEND_OT_FrameEffect_List_MoveDown(Operator):
             ext.frame_effects.move(idx, new_index)
             ext.frame_effects_index = new_index
             return {'FINISHED'}
-        else:
-            return {'CANCELLED'}
+        return {'CANCELLED'}
 
 
 # Panel to display collection on object properties
