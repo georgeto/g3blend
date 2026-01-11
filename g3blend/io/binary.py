@@ -63,7 +63,7 @@ class BinaryReader:
         if self.remaining() < len(expected):
             return False
 
-        if not self.read_bytes(len(expected)) == expected:
+        if self.read_bytes(len(expected)) != expected:
             self.skip(-len(expected))
             return False
 

@@ -276,12 +276,11 @@ def _extract_frames_from_curves(
 
         if num_keyframes is None:
             num_keyframes = len(curve.keyframe_points)
-        else:
-            if num_keyframes != len(curve.keyframe_points):
-                logger.warning(
-                    'Not all channels have same number of frames {} vs. {}.', num_keyframes, len(curve.keyframe_points)
-                )
-                return None
+        elif num_keyframes != len(curve.keyframe_points):
+            logger.warning(
+                'Not all channels have same number of frames {} vs. {}.', num_keyframes, len(curve.keyframe_points)
+            )
+            return None
 
         channels.append(curve.keyframe_points)
 

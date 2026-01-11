@@ -14,9 +14,8 @@ class eCResourceBase_PS(PropertySet):
         resource_version = reader.read_u16()
         self.size = reader.read_u32() if resource_version >= 0x17 else 0
 
-        if resource_version < 0x1E:
-            if reader.read_u16() > 1:
-                reader.skip(1)
+        if resource_version < 0x1E and reader.read_u16() > 1:
+            reader.skip(1)
 
     def write_post_version(self, writer: BinaryWriter) -> None:
         writer.write_u16(0x1E)
