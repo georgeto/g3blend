@@ -5,6 +5,8 @@ repos:
     hooks:
       - id: ruff-format
       - id: ruff-check
+        args: [--select=I, --select=F401, --fix]
+      - id: ruff-check
 
   - repo: https://github.com/abravalheri/validate-pyproject
     rev: 78f5e0f104cfa803d0597eaa924b4de3becd3e3e # v0.24.1
